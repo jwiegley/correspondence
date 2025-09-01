@@ -1,0 +1,26 @@
+Create a web application that connects to my Google Mail account. It shows me,
+with one line for each e-mail, everything that is either unread in my Inbox,
+or labeled "Notify" or "Action Item".
+
+If is it simply unread in the Inbox, it appears with a plain background and
+bold text. If it is Notify, it has a light green background, and if it an
+Action Item it has a light orange background.
+
+Anything that is read in the inbox and does not have these labels, should not
+be seen.
+
+The format of this page should be clean and succinct. I should be able to mark
+items as read, to notify, or as an action item, using one of three buttons to
+the right of each title, date and author line.
+
+The whole page should print beautifully to a landscape formatted US Letter
+page, if I should wish to do so. There should be no extraneous details or
+information, other than what has been specified above.
+
+There should be a "gear wheel" that accesses a settings page, where I can
+establish my OAuth credentials for accessing Google Mail, check on current
+status, etc.
+
+And of course, at the bottom of the page there should be a button for
+refreshing the current contents from my Google Mail account, in case I've made
+changes there in the meantime.
