@@ -9,6 +9,10 @@
     "packages/shared"
   ],
   "scripts": {
+    "preinstall": "npm run check:env",
+    "postinstall": "npm run setup:env",
+    "check:env": "node scripts/check-env.js || true",
+    "setup:env": "node scripts/setup-env.js",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
@@ -19,9 +23,13 @@
     "test": "npm run test --workspaces",
     "lint": "npm run lint --workspaces",
     "format": "prettier --write .",
-    "docker:up": "docker-compose up -d",
+    "docker:up": "bash scripts/start-all.sh",
     "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "npm run docker:down && npm run docker:up",
+    "wait:services": "node scripts/wait-for-services.js",
+    "start": "npm run docker:up",
+    "stop": "npm run docker:down"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",
