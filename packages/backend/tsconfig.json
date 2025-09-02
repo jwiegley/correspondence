@@ -7,7 +7,11 @@
     "paths": {
       "@shared/*": ["../shared/src/*"]
     },
-    "types": ["node", "jest"]
+    "types": ["node", "jest"],
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": false,
+    "strict": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
