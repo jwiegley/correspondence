@@ -123,7 +123,7 @@ class ErrorMonitoringService {
   /**
    * Middleware to add breadcrumbs for requests
    */
-  breadcrumbMiddleware = (_req: Request, _res: Response, next: NextFunction): void => {
+  breadcrumbMiddleware = (req: Request, res: Response, next: NextFunction): void => {
     const sessionId = this.getRequestId(req);
     
     // Add request breadcrumb
@@ -135,7 +135,7 @@ class ErrorMonitoringService {
 
     // Add breadcrumb for response
     const originalSend = res.send;
-    res.send = function(body) {
+    res.send = function(body: any) {
       const statusCode = res.statusCode;
       const level = statusCode >= 400 ? (statusCode >= 500 ? 'error' : 'warning') : 'info';
       
@@ -200,7 +200,7 @@ class ErrorMonitoringService {
     }, 5 * 60 * 1000);
   }
 
-  private generateErrorFingerprint(error: MonitoredError, req: Request): string {
+  private generateErrorFingerprint(error: MonitoredError, _req: Request): string {
     const crypto = require('crypto');
     const fingerprint = [
       error.name,
@@ -212,13 +212,13 @@ class ErrorMonitoringService {
     return crypto.createHash('md5').update(fingerprint).digest('hex');
   }
 
-  private getRequestId(_req: Request): string {
+  private getRequestId(req: Request): string {
     // Try to get existing request ID or generate one
     return req.headers['x-request-id'] as string || 
            `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private extractRequestContext(_req: Request): any {
+  private extractRequestContext(req: Request): any {
     return {
       method: req.method,
       url: req.url,
@@ -261,7 +261,7 @@ class ErrorMonitoringService {
     return sanitized;
   }
 
-  private determineSeverity(error: MonitoredError, req: Request): 'low' | 'medium' | 'high' | 'critical' {
+  private determineSeverity(error: MonitoredError, _req: Request): 'low' | 'medium' | 'high' | 'critical' {
     // Critical errors
     if (error.name === 'DatabaseConnectionError' || 
         error.message.includes('Redis connection failed') ||
@@ -290,7 +290,7 @@ class ErrorMonitoringService {
     return this.breadcrumbs.get(sessionId) || [];
   }
 
-  private logError(error: MonitoredError, req: Request): void {
+  private logError(error: MonitoredError, _req: Request): void {
     const logData = {
       error: {
         name: error.name,
@@ -343,7 +343,7 @@ class ErrorMonitoringService {
     }
   }
 
-  private async storeError(error: MonitoredError, req: Request): Promise<void> {
+  private async storeError(error: MonitoredError, _req: Request): Promise<void> {
     try {
       const errorData = {
         fingerprint: error.fingerprint,
