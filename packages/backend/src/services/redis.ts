@@ -386,7 +386,7 @@ class RedisService {
           end
         end
         return cjson.encode(stats)
-      `, []);
+      `, { keys: [] });
       
       const results = await pipeline.exec();
       const stats = results?.[0] ? JSON.parse(results[0] as string) : {};
