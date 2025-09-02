@@ -205,7 +205,7 @@ class ErrorMonitoringService {
     const fingerprint = [
       error.name,
       error.message,
-      req.path,
+      _req.path,
       error.stack?.split('\n')[1]?.trim() || ''
     ].join('|');
     

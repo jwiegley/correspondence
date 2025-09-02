@@ -386,7 +386,7 @@ class RedisService {
           end
         end
         return cjson.encode(stats)
-      `, 0);
+      `, []);
       
       const results = await pipeline.exec();
       const stats = results?.[0] ? JSON.parse(results[0] as string) : {};
@@ -394,7 +394,7 @@ class RedisService {
       return {
         totalKeys: await this.client.dbSize(),
         keysByType: stats,
-        memoryUsage: await this.client.memory('usage'),
+        memoryUsage: await this.client.info('memory'),
         timestamp: Date.now()
       };
     } catch (error) {
