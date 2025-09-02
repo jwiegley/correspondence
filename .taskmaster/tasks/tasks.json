@@ -1,0 +1,962 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Initialize Web Application Project Structure",
+        "description": "Set up a modern web application project with Node.js backend and React frontend, including package.json, folder structure, and development environment configuration",
+        "details": "Create project structure:\n- /backend (Node.js + Express)\n- /frontend (React with TypeScript)\n- /shared (shared types/interfaces)\n\nBackend setup:\n```\nnpm init -y\nnpm install express cors dotenv helmet\nnpm install -D @types/node @types/express typescript nodemon\n```\n\nFrontend setup:\n```\nnpx create-react-app frontend --template typescript\nnpm install axios react-query\n```\n\nConfigure TypeScript, ESLint, Prettier for both projects. Set up environment variables (.env) for API keys and OAuth credentials. Create docker-compose.yml for local development with Redis for session storage.",
+        "testStrategy": "Verify project builds successfully, development servers start without errors, and TypeScript compilation passes. Test hot-reload functionality in both frontend and backend.",
+        "priority": "high",
+        "dependencies": [],
+        "status": "done",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create root project structure and initialize Git repository",
+            "description": "Set up the main project directory with root-level configuration files and initialize version control",
+            "dependencies": [],
+            "details": "Create root project directory and initialize Git repository. Create .gitignore file with standard Node.js, React, and environment variable exclusions. Set up root package.json for workspace management with npm/yarn workspaces configuration. Create README.md with initial project description and setup instructions.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Set up backend directory with Express and TypeScript configuration",
+            "description": "Initialize Node.js backend with Express server, TypeScript compilation, and necessary dependencies",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Create /backend directory and initialize package.json. Install Express, cors, dotenv, helmet for production-ready setup. Install TypeScript and type definitions for Node.js and Express. Create tsconfig.json with appropriate compiler options for Node.js backend. Set up basic Express server structure with app.ts entry point and /src directory for source files.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Initialize React frontend with TypeScript template",
+            "description": "Create React application with TypeScript support and configure necessary frontend dependencies",
+            "dependencies": [
+              "1.1"
+            ],
+            "details": "Use create-react-app with TypeScript template to initialize /frontend directory. Install additional dependencies: axios for API calls, react-query for server state management. Configure proxy in package.json for development API calls to backend. Clean up default CRA files and create organized folder structure (/components, /hooks, /services, /utils).",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Configure shared types and interfaces module",
+            "description": "Set up shared TypeScript types/interfaces that can be used by both frontend and backend",
+            "dependencies": [
+              "1.2",
+              "1.3"
+            ],
+            "details": "Create /shared directory with its own package.json and tsconfig.json. Define common interfaces for API requests/responses, user models, and email data structures. Configure TypeScript path mappings in both frontend and backend to import from shared module. Set up build process to compile shared types for consumption by both projects.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Set up Docker compose for local development environment",
+            "description": "Create Docker configuration for containerized development with Redis for session storage",
+            "dependencies": [
+              "1.2",
+              "1.3"
+            ],
+            "details": "Create docker-compose.yml with services for backend, frontend, and Redis. Configure Redis container with persistent volume for session data. Set up network configuration for inter-container communication. Create Dockerfile for backend with multi-stage build for development and production. Configure environment variables for Docker services.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Create environment variable templates and documentation",
+            "description": "Set up environment configuration files with proper templates and security documentation",
+            "dependencies": [
+              "1.2",
+              "1.3"
+            ],
+            "details": "Create .env.example files for both frontend and backend with all required variables documented. Include placeholders for Google OAuth credentials, API keys, Redis connection, and JWT secrets. Document environment variable purposes and required scopes in README. Set up dotenv configuration in both applications with validation for required variables.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Configure development scripts and hot-reload functionality",
+            "description": "Set up development tooling for efficient development workflow with automatic reloading",
+            "dependencies": [
+              "1.2",
+              "1.3",
+              "1.4"
+            ],
+            "details": "Configure nodemon for backend with TypeScript watch mode and ignore patterns. Set up concurrent script to run both frontend and backend simultaneously from root. Configure webpack-dev-server proxy for frontend API calls. Create debug configurations for VS Code with source map support. Set up npm scripts for development, build, test, and lint commands.",
+            "status": "done",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Configure ESLint, Prettier, and initial CI/CD pipeline",
+            "description": "Set up code quality tools and basic continuous integration configuration",
+            "dependencies": [
+              "1.2",
+              "1.3",
+              "1.4"
+            ],
+            "details": "Install and configure ESLint with TypeScript parser for both projects. Set up Prettier with consistent formatting rules across frontend and backend. Create .eslintrc.js and .prettierrc configuration files at root level. Configure pre-commit hooks with husky and lint-staged. Create GitHub Actions workflow for CI with build, lint, and test steps.",
+            "status": "done",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Implement Google OAuth 2.0 Authentication Flow",
+        "description": "Set up OAuth 2.0 authentication with Google using Passport.js, including secure token storage and automatic refresh mechanism",
+        "details": "Install OAuth dependencies:\n```\nnpm install passport passport-google-oauth20 express-session connect-redis\nnpm install jsonwebtoken bcrypt\n```\n\nImplement OAuth flow:\n```typescript\n// auth.controller.ts\npassport.use(new GoogleStrategy({\n  clientID: process.env.GOOGLE_CLIENT_ID,\n  clientSecret: process.env.GOOGLE_CLIENT_SECRET,\n  callbackURL: '/auth/google/callback',\n  scope: ['gmail.readonly', 'gmail.modify']\n}, async (accessToken, refreshToken, profile, done) => {\n  // Store tokens securely in Redis with encryption\n  const encryptedTokens = encryptTokens({ accessToken, refreshToken });\n  await redis.set(`user:${profile.id}:tokens`, encryptedTokens);\n  return done(null, profile);\n}));\n```\n\nImplement token refresh middleware to handle expired tokens automatically. Set up secure session management with httpOnly cookies.",
+        "testStrategy": "Test OAuth flow end-to-end, verify token storage in Redis, test token refresh when access token expires, verify proper scope permissions are granted",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up Passport.js with Google OAuth strategy configuration",
+            "description": "Initialize Passport.js and configure the Google OAuth 2.0 strategy with proper client credentials, callback URLs, and required Gmail scopes",
+            "dependencies": [],
+            "details": "Install required packages (passport, passport-google-oauth20). Create auth configuration file to initialize Passport with GoogleStrategy. Set up environment variables for GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and callback URLs. Configure OAuth scopes for gmail.readonly and gmail.modify permissions. Implement the verify callback function to handle successful authentication.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Create secure token encryption/decryption utilities",
+            "description": "Implement cryptographic functions to encrypt and decrypt OAuth tokens before storing them in Redis for enhanced security",
+            "dependencies": [],
+            "details": "Create crypto utility module using Node.js crypto library or bcrypt. Implement encryptTokens() function to encrypt access and refresh tokens using AES-256 encryption. Implement decryptTokens() function for secure token retrieval. Create secure key management using environment variables. Add token validation and sanitization before encryption.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Redis session store with proper TTL settings",
+            "description": "Set up Redis client and configure connect-redis for session storage with appropriate time-to-live settings and connection pooling",
+            "dependencies": [],
+            "details": "Install and configure redis and connect-redis packages. Create Redis client with connection pooling and error handling. Configure session store with appropriate TTL (e.g., 24 hours for sessions, 60 days for refresh tokens). Implement session serialization and deserialization. Set up Redis connection monitoring and reconnection logic.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Build authentication middleware for protected routes",
+            "description": "Create Express middleware to verify user authentication status and protect API endpoints that require authentication",
+            "dependencies": [
+              "2.1",
+              "2.3"
+            ],
+            "details": "Create isAuthenticated middleware to check session validity. Implement requireAuth middleware for protecting routes. Add role-based access control if needed. Create middleware to attach user data to request object. Implement session validation against Redis store. Add proper error responses for unauthorized access (401/403).",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Create OAuth callback handlers with error handling",
+            "description": "Implement callback route handlers for successful and failed OAuth authentication attempts with comprehensive error handling",
+            "dependencies": [
+              "2.1",
+              "2.2",
+              "2.3"
+            ],
+            "details": "Create /auth/google route to initiate OAuth flow. Implement /auth/google/callback to handle OAuth response. Store encrypted tokens in Redis upon successful authentication. Handle various OAuth error scenarios (denied access, invalid grant, etc.). Implement proper redirects to frontend with success/error states. Add logging for authentication events.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement automatic token refresh mechanism with retry logic",
+            "description": "Build a system to automatically refresh expired access tokens using refresh tokens with exponential backoff retry logic",
+            "dependencies": [
+              "2.2",
+              "2.3",
+              "2.5"
+            ],
+            "details": "Create token refresh service to check token expiration. Implement refreshAccessToken() function using Google OAuth2 client. Add exponential backoff for failed refresh attempts (max 3 retries). Create middleware to automatically refresh tokens before API calls. Handle refresh token expiration and force re-authentication. Queue failed requests during token refresh and retry after success.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Build frontend OAuth initiation flow with proper redirects",
+            "description": "Create React components and routing for initiating OAuth flow and handling authentication redirects",
+            "dependencies": [
+              "2.5"
+            ],
+            "details": "Create login page with 'Sign in with Google' button. Implement OAuth initiation that redirects to /auth/google. Handle OAuth callback redirects with success/error states. Store authentication state in React context or Redux. Implement loading states during authentication. Add proper error messages for failed authentication attempts.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Create user session management with httpOnly cookies",
+            "description": "Implement secure session management using httpOnly cookies to prevent XSS attacks and maintain user sessions",
+            "dependencies": [
+              "2.3",
+              "2.4",
+              "2.7"
+            ],
+            "details": "Configure express-session with secure cookie settings (httpOnly, secure, sameSite). Implement session creation upon successful authentication. Set appropriate cookie expiration times. Add CSRF protection using csurf middleware. Implement session renewal on activity. Configure different settings for development and production environments.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Implement logout and session cleanup",
+            "description": "Create logout functionality that properly cleans up sessions, tokens, and cookies",
+            "dependencies": [
+              "2.3",
+              "2.8"
+            ],
+            "details": "Create /auth/logout endpoint to handle logout requests. Clear session data from Redis store. Revoke OAuth tokens with Google if possible. Clear httpOnly cookies on client side. Implement logout on all devices functionality. Add proper redirect after logout. Clean up any cached user data.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 10,
+            "title": "Add comprehensive error handling for OAuth failures",
+            "description": "Implement robust error handling for all OAuth-related failures with user-friendly error messages and recovery options",
+            "dependencies": [
+              "2.5",
+              "2.6",
+              "2.7",
+              "2.9"
+            ],
+            "details": "Create centralized error handler for OAuth errors. Implement specific handling for common errors (network issues, invalid credentials, expired tokens). Add user-friendly error messages and recovery suggestions. Implement fallback authentication methods if needed. Add comprehensive logging for debugging OAuth issues. Create error recovery flows (retry authentication, clear corrupted sessions).",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Create Gmail API Integration Service",
+        "description": "Build service layer for Gmail API operations including fetching emails, managing labels, and updating read status",
+        "details": "Install Gmail API client:\n```\nnpm install @googleapis/gmail\n```\n\nCreate GmailService class:\n```typescript\nclass GmailService {\n  private gmail: gmail_v1.Gmail;\n  \n  async fetchEmails(userId: string): Promise<Email[]> {\n    // Fetch unread inbox emails\n    const unreadQuery = 'is:unread in:inbox';\n    // Fetch Notify labeled emails\n    const notifyQuery = 'label:Notify';\n    // Fetch Action Item labeled emails\n    const actionQuery = 'label:Action-Item';\n    \n    const results = await Promise.all([\n      this.gmail.users.messages.list({ userId: 'me', q: unreadQuery }),\n      this.gmail.users.messages.list({ userId: 'me', q: notifyQuery }),\n      this.gmail.users.messages.list({ userId: 'me', q: actionQuery })\n    ]);\n    \n    // Deduplicate and fetch full message details\n    return this.processEmails(results);\n  }\n  \n  async toggleReadStatus(messageId: string, markAsRead: boolean) {\n    const request = markAsRead \n      ? { removeLabelIds: ['UNREAD'] }\n      : { addLabelIds: ['UNREAD'] };\n    return this.gmail.users.messages.modify({ userId: 'me', id: messageId, requestBody: request });\n  }\n  \n  async toggleLabel(messageId: string, labelName: string, add: boolean) {\n    const labels = await this.gmail.users.labels.list({ userId: 'me' });\n    const label = labels.data.labels.find(l => l.name === labelName);\n    const request = add \n      ? { addLabelIds: [label.id] }\n      : { removeLabelIds: [label.id] };\n    return this.gmail.users.messages.modify({ userId: 'me', id: messageId, requestBody: request });\n  }\n}\n```",
+        "testStrategy": "Mock Gmail API responses, test email fetching with different label combinations, verify deduplication logic, test label toggle operations, verify proper error handling for API failures",
+        "priority": "high",
+        "dependencies": [
+          2
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up Gmail API client wrapper with authentication",
+            "description": "Create the core GmailService class with Google OAuth2 client initialization and authentication token management",
+            "dependencies": [],
+            "details": "Create a GmailService class that initializes the Gmail API client using the googleapis library. Implement constructor that accepts OAuth2 tokens (access token and refresh token) and creates an authenticated gmail client instance. Include proper TypeScript types from @googleapis/gmail and create interfaces for service methods. Ensure the service can handle both initial authentication and token refresh scenarios.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement email fetching with label-based queries",
+            "description": "Build the fetchEmails method to retrieve emails based on multiple label queries (unread, Notify, Action-Item) with parallel execution",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Implement the fetchEmails method that executes three parallel Gmail API queries: 'is:unread in:inbox', 'label:Notify', and 'label:Action-Item'. Use Promise.all() for parallel execution. Handle the Gmail API response format which returns message IDs that need to be fetched separately for full details. Implement pagination support for large result sets using pageToken.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build message detail retrieval and parsing utilities",
+            "description": "Create helper methods to fetch full message details and parse Gmail message format into application's Email interface",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Implement processEmails method that takes message list results and fetches full message details using gmail.users.messages.get(). Parse Gmail's complex message structure to extract: subject, sender, date, body (handling both plain text and HTML parts), labels, and read status. Create deduplication logic to handle emails that appear in multiple query results. Transform Gmail message format to match the application's Email interface.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create label management functions",
+            "description": "Implement methods to list available labels and manage label operations (add/remove) on messages",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Implement listLabels method to fetch all available Gmail labels and cache them for performance. Create toggleLabel method that can add or remove labels from messages using gmail.users.messages.modify(). Handle label name to label ID mapping since Gmail API requires label IDs. Implement label existence validation before attempting operations. Consider creating custom labels if they don't exist (Notify, Action-Item).",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement read/unread status toggle functionality",
+            "description": "Build the toggleReadStatus method to mark emails as read or unread using Gmail API",
+            "dependencies": [
+              "3.1"
+            ],
+            "details": "Implement toggleReadStatus method using gmail.users.messages.modify() API endpoint. Handle the UNREAD system label correctly - remove it to mark as read, add it to mark as unread. Ensure the method returns updated message status for UI synchronization. Handle batch operations for marking multiple messages at once for performance optimization.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Add comprehensive error handling and retry logic",
+            "description": "Implement robust error handling for all Gmail API operations with exponential backoff retry strategy",
+            "dependencies": [
+              "3.2",
+              "3.3",
+              "3.4",
+              "3.5"
+            ],
+            "details": "Wrap all Gmail API calls in try-catch blocks with specific error type handling: rate limit errors (429), authentication errors (401), not found errors (404), and network errors. Implement exponential backoff retry logic for transient failures with configurable max retries. Create custom error classes for different failure scenarios. Log errors appropriately and provide meaningful error messages for the UI layer. Handle token expiration and trigger refresh token flow when needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Create caching layer for Gmail responses",
+            "description": "Implement an in-memory cache with TTL to optimize performance and reduce API calls",
+            "dependencies": [
+              "3.2",
+              "3.3"
+            ],
+            "details": "Create a caching mechanism using Map or a caching library like node-cache to store fetched emails and labels. Implement cache invalidation strategies: time-based (TTL), and operation-based (invalidate on modify operations). Cache full message details to avoid repeated fetches. Implement cache warming on service initialization. Add cache hit/miss metrics for monitoring. Ensure cache is properly cleared on logout or token refresh.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Design and Implement Email List React Component",
+        "description": "Create the main email list view component with one-line-per-email display and visual categorization based on email status",
+        "details": "Create EmailList component with TypeScript:\n```typescript\ninterface Email {\n  id: string;\n  subject: string;\n  from: string;\n  date: Date;\n  isUnread: boolean;\n  hasNotifyLabel: boolean;\n  hasActionItemLabel: boolean;\n}\n\nconst EmailListItem: React.FC<{email: Email}> = ({ email }) => {\n  const getBackgroundColor = () => {\n    if (email.hasActionItemLabel) return '#FFF3E0';\n    if (email.hasNotifyLabel) return '#E8F5E9';\n    return 'transparent';\n  };\n  \n  return (\n    <div className=\"email-row\" style={{ backgroundColor: getBackgroundColor() }}>\n      <span className={email.isUnread ? 'bold' : ''}>{email.subject}</span>\n      <span>{email.from}</span>\n      <span>{formatDate(email.date)}</span>\n      <EmailActions emailId={email.id} {...email} />\n    </div>\n  );\n};\n```\n\nImplement CSS with print media queries:\n```css\n.email-row {\n  display: grid;\n  grid-template-columns: 2fr 1fr 150px 120px;\n  padding: 8px;\n  border-bottom: 1px solid #e0e0e0;\n}\n\n@media print {\n  .email-actions { display: none; }\n  @page { size: landscape; }\n}\n```",
+        "testStrategy": "Test component rendering with different email states, verify correct background colors applied, test responsive layout, validate print CSS removes interactive elements",
+        "priority": "high",
+        "dependencies": [
+          1
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Set up React component structure and TypeScript interfaces",
+            "description": "Create the base component files, define TypeScript interfaces for Email data, and set up the initial component hierarchy",
+            "dependencies": [],
+            "details": "Create src/components/EmailList directory structure. Define Email interface with all required fields (id, subject, from, date, isUnread, hasNotifyLabel, hasActionItemLabel). Create EmailList.tsx as the container component and EmailListItem.tsx for individual email rows. Set up proper TypeScript types for all props and ensure type safety throughout the component tree.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement EmailListItem component with conditional styling",
+            "description": "Build the EmailListItem component with background color logic based on email labels and unread status styling",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Implement getBackgroundColor function that returns '#FFF3E0' for action items, '#E8F5E9' for notify labels, and transparent otherwise. Apply conditional bold styling for unread emails. Structure the component to receive email data as props and render all required fields (subject, from, date). Ensure proper TypeScript typing for the component props.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Create responsive grid layout with CSS",
+            "description": "Implement the CSS grid layout for email rows with proper column sizing and responsive behavior",
+            "dependencies": [
+              "4.1"
+            ],
+            "details": "Create EmailList.css with grid layout using 'grid-template-columns: 2fr 1fr 150px 120px' for subject, sender, date, and actions columns. Add padding of 8px and bottom border styling. Implement hover states for better UX. Ensure the layout remains readable on different screen sizes and add appropriate breakpoints if needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Add print-specific CSS with media queries",
+            "description": "Implement print media queries to optimize the email list for printing, hiding action buttons and setting landscape orientation",
+            "dependencies": [
+              "4.3"
+            ],
+            "details": "Create @media print rules to hide .email-actions elements completely. Set @page size to landscape for better email list printing. Adjust grid layout for print to maximize space usage. Remove hover effects and interactive styling in print mode. Ensure borders and backgrounds print correctly with appropriate print color adjustments.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement EmailList container with data fetching",
+            "description": "Build the main EmailList container component with data fetching logic, loading states, and email list rendering",
+            "dependencies": [
+              "4.2"
+            ],
+            "details": "Implement data fetching using React Query or similar library to fetch email data from the API. Add loading state with appropriate spinner or skeleton UI. Map through email array and render EmailListItem components. Pass required props including email data and any callback functions. Implement proper error handling for failed API requests.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Add empty state handling and date formatting",
+            "description": "Implement empty state UI when no emails are present and create a date formatting utility function",
+            "dependencies": [
+              "4.5"
+            ],
+            "details": "Create an empty state component that displays when the email list is empty with appropriate messaging. Implement formatDate utility function to format dates consistently (e.g., 'Dec 15' for recent, '12/15/2023' for older). Add proper localization support for date formatting. Include helpful message or illustration in empty state to guide users.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Implement Email Action Buttons",
+        "description": "Create interactive action buttons for each email to toggle read status, Notify label, and Action Item label with real-time UI updates",
+        "details": "Create EmailActions component:\n```typescript\nconst EmailActions: React.FC<EmailActionsProps> = ({ emailId, isUnread, hasNotifyLabel, hasActionItemLabel }) => {\n  const queryClient = useQueryClient();\n  \n  const toggleReadMutation = useMutation(\n    (markAsRead: boolean) => api.toggleReadStatus(emailId, markAsRead),\n    {\n      onMutate: async (markAsRead) => {\n        // Optimistic update\n        await queryClient.cancelQueries(['emails']);\n        const previous = queryClient.getQueryData(['emails']);\n        queryClient.setQueryData(['emails'], old => \n          updateEmailInList(old, emailId, { isUnread: !markAsRead })\n        );\n        return { previous };\n      },\n      onError: (err, variables, context) => {\n        queryClient.setQueryData(['emails'], context.previous);\n      },\n      onSettled: () => {\n        queryClient.invalidateQueries(['emails']);\n      }\n    }\n  );\n  \n  return (\n    <div className=\"email-actions\">\n      <button \n        onClick={() => toggleReadMutation.mutate(!isUnread)}\n        title={isUnread ? 'Mark as Read' : 'Mark as Unread'}\n      >\n        {isUnread ? '📖' : '📕'}\n      </button>\n      <button \n        onClick={() => toggleLabelMutation.mutate({ label: 'Notify', add: !hasNotifyLabel })}\n        className={hasNotifyLabel ? 'active' : ''}\n      >\n        🔔\n      </button>\n      <button \n        onClick={() => toggleLabelMutation.mutate({ label: 'Action Item', add: !hasActionItemLabel })}\n        className={hasActionItemLabel ? 'active' : ''}\n      >\n        📌\n      </button>\n    </div>\n  );\n};\n```\n\nAdd loading states and error handling with toast notifications.",
+        "testStrategy": "Test each button's functionality, verify optimistic UI updates, test error rollback scenarios, verify Gmail API calls are made correctly, test keyboard accessibility",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create EmailActions Component Structure",
+            "description": "Build the base EmailActions React component with TypeScript interfaces and prop definitions",
+            "dependencies": [],
+            "details": "Define EmailActionsProps interface with emailId, isUnread, hasNotifyLabel, and hasActionItemLabel properties. Create the component skeleton with proper TypeScript typing. Set up the component to receive props and establish the basic JSX structure with three action buttons (read/unread toggle, notify label, action item label). Import necessary dependencies including React, useState for local state management, and prepare for React Query integration.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement React Query Mutations Setup",
+            "description": "Configure React Query mutations for each action type with optimistic updates and rollback logic",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Set up three separate mutations using useMutation: toggleReadMutation for read/unread status, toggleNotifyLabelMutation for the Notify label, and toggleActionItemLabelMutation for the Action Item label. Each mutation should include onMutate for optimistic updates (immediately updating the UI), onError for rollback to previous state if the API call fails, and onSettled for cache invalidation. Implement the updateEmailInList helper function to properly update email data in the React Query cache.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build Backend API Endpoints",
+            "description": "Create Express API endpoints for toggling read status and managing email labels",
+            "dependencies": [],
+            "details": "Implement three API endpoints: PATCH /api/emails/:emailId/read for toggling read/unread status, POST /api/emails/:emailId/labels for adding labels, and DELETE /api/emails/:emailId/labels/:labelName for removing labels. Each endpoint should interact with the Gmail API using the stored OAuth tokens, handle authentication verification, validate request parameters, and return appropriate status codes. Include proper error handling for Gmail API failures and rate limiting scenarios.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Add Loading and Disabled States",
+            "description": "Implement visual feedback during mutation operations with loading indicators and disabled button states",
+            "dependencies": [
+              "5.1",
+              "5.2"
+            ],
+            "details": "Add isLoading state tracking for each mutation using the mutation.isLoading property from React Query. Apply disabled attribute to buttons while mutations are in progress to prevent duplicate requests. Add CSS classes for loading states including opacity changes, cursor changes to 'not-allowed', and optional spinning animations on the icons. Implement a subtle pulse or spinner overlay on buttons during active mutations. Ensure buttons are re-enabled only after the mutation completes or fails.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Keyboard Accessibility and ARIA",
+            "description": "Add comprehensive keyboard navigation support and ARIA attributes for screen reader compatibility",
+            "dependencies": [
+              "5.1"
+            ],
+            "details": "Add tabIndex={0} to all action buttons for keyboard navigation. Implement keyboard event handlers for Enter and Space keys to trigger button actions. Add appropriate ARIA labels: aria-label for descriptive button purposes, aria-pressed for toggle state buttons, aria-busy during loading states. Include role='button' explicitly and aria-describedby for additional context. Implement focus management to maintain focus position after actions. Add visual focus indicators that meet WCAG contrast requirements.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Create Toast Notification System",
+            "description": "Build a toast notification component for success and error feedback messages",
+            "dependencies": [],
+            "details": "Create a Toast component with TypeScript that supports success, error, warning, and info variants. Implement a ToastProvider context using React Context API for global toast management. Add auto-dismiss functionality with configurable duration (default 3 seconds for success, 5 seconds for errors). Include manual dismiss capability with close button. Position toasts in the top-right corner with proper z-index stacking. Add smooth slide-in and fade-out animations. Create useToast hook for easy toast triggering from any component. Include queuing system for multiple simultaneous toasts.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Integrate Actions with Email List and Testing",
+            "description": "Connect EmailActions component to the email list view and implement comprehensive testing",
+            "dependencies": [
+              "5.1",
+              "5.2",
+              "5.3",
+              "5.4",
+              "5.5",
+              "5.6"
+            ],
+            "details": "Integrate EmailActions component into each email row in the EmailList component. Pass required props from email data including current read status and label states. Wire up toast notifications to show success/error messages after each action. Write unit tests for EmailActions component testing each button click, mutation behavior, and prop changes. Add integration tests verifying API calls are made correctly. Test optimistic updates and rollback scenarios. Verify accessibility with automated testing tools. Test error scenarios including network failures and API errors. Ensure proper cleanup of event listeners and subscriptions.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Build Settings Page with OAuth Configuration",
+        "description": "Create settings modal/page for OAuth setup, connection status display, and account management",
+        "details": "Create Settings component:\n```typescript\nconst Settings: React.FC = () => {\n  const [isOpen, setIsOpen] = useState(false);\n  const { data: authStatus } = useQuery(['auth-status'], api.getAuthStatus);\n  \n  return (\n    <Modal isOpen={isOpen} onClose={() => setIsOpen(false)}>\n      <h2>Settings</h2>\n      \n      <div className=\"settings-section\">\n        <h3>Gmail Account</h3>\n        <input value={authStatus?.email} disabled />\n        \n        <div className=\"connection-status\">\n          <span className={authStatus?.isConnected ? 'connected' : 'disconnected'}>\n            {authStatus?.isConnected ? '✓ Connected' : '✗ Disconnected'}\n          </span>\n          <span>Last Sync: {formatDate(authStatus?.lastSync)}</span>\n        </div>\n        \n        <div className=\"settings-actions\">\n          <button onClick={testConnection}>Test Connection</button>\n          {authStatus?.isConnected ? (\n            <button onClick={disconnect} className=\"danger\">Disconnect</button>\n          ) : (\n            <button onClick={initiateOAuth} className=\"primary\">Connect Gmail</button>\n          )}\n        </div>\n      </div>\n      \n      {authStatus?.error && (\n        <div className=\"error-message\">{authStatus.error}</div>\n      )}\n    </Modal>\n  );\n};\n```\n\nImplement connection test endpoint that verifies Gmail API access and OAuth token validity.",
+        "testStrategy": "Test OAuth flow initiation, verify connection status updates, test disconnect functionality, verify error messages display correctly, test modal accessibility",
+        "priority": "medium",
+        "dependencies": [
+          2,
+          4
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create Modal Component with Accessibility",
+            "description": "Build a reusable modal component with proper ARIA attributes, keyboard navigation, focus trapping, and backdrop click handling",
+            "dependencies": [],
+            "details": "Implement Modal component with:\n- ARIA attributes (role=\"dialog\", aria-modal=\"true\", aria-labelledby)\n- Focus trap to keep tab navigation within modal\n- ESC key handler to close modal\n- Click-outside-to-close functionality\n- Smooth open/close animations with CSS transitions\n- Portal rendering to document body\n- Proper cleanup on unmount",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Build Connection Status Display Component",
+            "description": "Create a component that displays real-time OAuth connection status with visual indicators and last sync timestamp",
+            "dependencies": [],
+            "details": "Implement ConnectionStatus component:\n- Visual status indicator (green checkmark for connected, red X for disconnected)\n- Display connected email address when authenticated\n- Show last successful sync timestamp with relative time formatting\n- Loading state while checking connection\n- Auto-refresh status on component mount and at intervals\n- Tooltip with detailed connection information",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement Test Connection Functionality",
+            "description": "Create backend endpoint and frontend handler to verify Gmail API access and OAuth token validity with user feedback",
+            "dependencies": [],
+            "details": "Backend endpoint:\n- GET /api/auth/test-connection\n- Verify OAuth token is valid and not expired\n- Make test call to Gmail API (fetch user profile)\n- Return connection status, email address, and any errors\n\nFrontend implementation:\n- Loading state during test\n- Success/failure toast notifications\n- Update connection status display on result\n- Handle various error scenarios (expired token, network issues, API errors)",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create OAuth Flow Handlers",
+            "description": "Implement disconnect functionality and reconnect OAuth flow handlers with proper state management and error handling",
+            "dependencies": [
+              "6.3"
+            ],
+            "details": "Disconnect flow:\n- POST /api/auth/disconnect endpoint\n- Revoke OAuth tokens via Google API\n- Clear stored tokens from database\n- Update UI to show disconnected state\n- Clear cached email data\n\nReconnect flow:\n- Reuse OAuth initiation from Task 2\n- Handle redirect back to settings modal\n- Auto-close modal on successful connection\n- Show inline errors for failed attempts",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Implement Error Message Display with Guidance",
+            "description": "Create error display component that shows actionable error messages with user-friendly guidance for resolution",
+            "dependencies": [
+              "6.1",
+              "6.2",
+              "6.3",
+              "6.4"
+            ],
+            "details": "Error handling component:\n- Map technical errors to user-friendly messages\n- Provide actionable steps for common issues:\n  - Expired token: 'Your connection has expired. Please reconnect.'\n  - Network error: 'Unable to reach Gmail. Check your internet connection.'\n  - Permission denied: 'Please grant email permissions to continue.'\n- Retry button for transient errors\n- Help link to troubleshooting documentation\n- Auto-dismiss success messages after 3 seconds\n- Persistent display for critical errors",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Implement Real-time Email Synchronization",
+        "description": "Set up bi-directional synchronization with Gmail using webhooks or polling, with proper error handling and retry logic",
+        "details": "Implement sync service with exponential backoff:\n```typescript\nclass SyncService {\n  private syncInterval: NodeJS.Timer;\n  private retryCount = 0;\n  private maxRetries = 3;\n  \n  async startSync(userId: string) {\n    // Initial sync\n    await this.performSync(userId);\n    \n    // Set up polling (Gmail doesn't support webhooks for all operations)\n    this.syncInterval = setInterval(async () => {\n      try {\n        await this.performSync(userId);\n        this.retryCount = 0;\n      } catch (error) {\n        this.handleSyncError(error);\n      }\n    }, 30000); // 30 seconds\n  }\n  \n  private async performSync(userId: string) {\n    const lastSyncToken = await redis.get(`user:${userId}:syncToken`);\n    const changes = await gmailService.getChanges(lastSyncToken);\n    \n    // Process changes and emit to connected clients via WebSocket\n    await this.processChanges(changes);\n    \n    // Update sync token\n    await redis.set(`user:${userId}:syncToken`, changes.newSyncToken);\n  }\n  \n  private handleSyncError(error: Error) {\n    if (this.retryCount < this.maxRetries) {\n      const delay = Math.pow(2, this.retryCount) * 1000;\n      setTimeout(() => this.performSync(userId), delay);\n      this.retryCount++;\n    } else {\n      // Notify user of sync failure\n      this.notifyUser('Sync failed after multiple attempts');\n    }\n  }\n}\n```\n\nImplement WebSocket for real-time updates to connected clients.",
+        "testStrategy": "Test sync with network interruptions, verify retry logic with exponential backoff, test WebSocket message delivery, verify sync token persistence, test handling of Gmail API rate limits",
+        "priority": "medium",
+        "dependencies": [
+          3
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create SyncService class with lifecycle management",
+            "description": "Build the core SyncService class with start, stop, pause, and resume methods for managing sync lifecycle",
+            "dependencies": [],
+            "details": "Implement SyncService class with proper lifecycle management including initialization, cleanup on shutdown, pause/resume capabilities for maintenance, and state tracking. Include proper TypeScript typing and dependency injection for Gmail service and Redis client.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Gmail API incremental sync with history tokens",
+            "description": "Set up Gmail history API integration for efficient incremental synchronization using history tokens",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Implement Gmail history.list() API integration to fetch only changes since last sync using historyId tokens. Handle initial full sync when no token exists, process message additions/deletions/label changes, and properly paginate through history results.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build exponential backoff retry mechanism",
+            "description": "Create robust retry logic with exponential backoff for handling transient failures",
+            "dependencies": [
+              "7.1"
+            ],
+            "details": "Implement exponential backoff algorithm with jitter, configurable max retries and base delay, circuit breaker pattern for repeated failures, and proper error classification (retryable vs non-retryable). Include retry attempt tracking and metrics.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Set up WebSocket server for real-time client updates",
+            "description": "Create WebSocket server using Socket.io for pushing real-time email updates to connected clients",
+            "dependencies": [],
+            "details": "Set up Socket.io server with proper namespace and room management, implement authentication middleware for WebSocket connections, create event handlers for sync updates, and implement connection pooling and cleanup. Include heartbeat mechanism for connection health.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Create WebSocket client connection with reconnection logic",
+            "description": "Build client-side WebSocket connection handler with automatic reconnection and state management",
+            "dependencies": [
+              "7.4"
+            ],
+            "details": "Implement Socket.io client with automatic reconnection strategy, exponential backoff for reconnection attempts, connection state management in React context, and event listeners for sync updates. Include offline detection and queuing of actions.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement sync state persistence in Redis",
+            "description": "Create Redis-based persistence layer for sync tokens, state, and metadata",
+            "dependencies": [
+              "7.1",
+              "7.2"
+            ],
+            "details": "Design Redis schema for sync state including history tokens, last sync timestamp, sync status, and error counts. Implement atomic operations for state updates, TTL management for temporary data, and Redis transaction support for consistency.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Build change processing and deduplication logic",
+            "description": "Create system for processing Gmail changes and preventing duplicate operations",
+            "dependencies": [
+              "7.2",
+              "7.6"
+            ],
+            "details": "Implement change processor that handles message additions, deletions, and label changes. Add deduplication using message IDs and change timestamps, batch processing for efficiency, and idempotent operations. Include change event normalization.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Add sync conflict resolution for concurrent modifications",
+            "description": "Implement conflict detection and resolution strategy for concurrent email modifications",
+            "dependencies": [
+              "7.7"
+            ],
+            "details": "Create conflict detection using version vectors or timestamps, implement last-write-wins or merge strategies for conflicts, add user notification for unresolvable conflicts, and maintain audit log of conflict resolutions. Include optimistic locking support.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Create sync status monitoring and health checks",
+            "description": "Build monitoring system for sync health, performance metrics, and alerting",
+            "dependencies": [
+              "7.1",
+              "7.6"
+            ],
+            "details": "Implement health check endpoints for sync service status, add metrics collection for sync latency and success rates, create alerting thresholds for sync failures, and build dashboard data endpoints. Include sync queue depth monitoring.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 10,
+            "title": "Implement rate limit handling for Gmail API",
+            "description": "Create intelligent rate limiting system to stay within Gmail API quotas",
+            "dependencies": [
+              "7.2",
+              "7.3"
+            ],
+            "details": "Implement token bucket algorithm for rate limiting, add quota tracking and prediction, create backpressure mechanism when approaching limits, and implement request prioritization. Include quota usage monitoring and adaptive request pacing.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 11,
+            "title": "Add comprehensive error recovery and user notifications",
+            "description": "Build error recovery mechanisms and user notification system for sync issues",
+            "dependencies": [
+              "7.3",
+              "7.5",
+              "7.9"
+            ],
+            "details": "Implement error categorization and recovery strategies, create user-friendly error messages and notifications, add automatic recovery for common issues, and implement manual sync trigger option. Include error reporting to monitoring systems and sync state recovery procedures.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "Add Manual Refresh and Auto-refresh Features",
+        "description": "Implement manual refresh button and configurable auto-refresh functionality with visual feedback",
+        "details": "Create Refresh component:\n```typescript\nconst RefreshControl: React.FC = () => {\n  const [isRefreshing, setIsRefreshing] = useState(false);\n  const [autoRefresh, setAutoRefresh] = useState(false);\n  const [refreshInterval, setRefreshInterval] = useState(60);\n  const queryClient = useQueryClient();\n  \n  useEffect(() => {\n    if (autoRefresh) {\n      const interval = setInterval(() => {\n        queryClient.invalidateQueries(['emails']);\n      }, refreshInterval * 1000);\n      return () => clearInterval(interval);\n    }\n  }, [autoRefresh, refreshInterval]);\n  \n  const handleManualRefresh = async () => {\n    setIsRefreshing(true);\n    await queryClient.invalidateQueries(['emails']);\n    setIsRefreshing(false);\n  };\n  \n  return (\n    <div className=\"refresh-control\">\n      <button \n        onClick={handleManualRefresh} \n        disabled={isRefreshing}\n        className=\"refresh-button\"\n      >\n        <span className={isRefreshing ? 'spinning' : ''}>↻</span>\n        {isRefreshing ? 'Refreshing...' : 'Refresh'}\n      </button>\n      \n      <div className=\"auto-refresh-toggle\">\n        <input \n          type=\"checkbox\" \n          checked={autoRefresh} \n          onChange={(e) => setAutoRefresh(e.target.checked)}\n        />\n        <label>Auto-refresh every</label>\n        <select \n          value={refreshInterval} \n          onChange={(e) => setRefreshInterval(Number(e.target.value))}\n        >\n          <option value={30}>30 seconds</option>\n          <option value={60}>1 minute</option>\n          <option value={300}>5 minutes</option>\n        </select>\n      </div>\n      \n      <span className=\"last-refresh\">Last refresh: {formatTime(lastRefresh)}</span>\n    </div>\n  );\n};\n```\n\nAdd CSS animation for spinning refresh icon.",
+        "testStrategy": "Test manual refresh triggers data reload, verify auto-refresh intervals work correctly, test visual feedback during refresh, verify last refresh timestamp updates",
+        "priority": "low",
+        "dependencies": [
+          4,
+          7
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create RefreshControl UI Component",
+            "description": "Build the main RefreshControl React component with state management for refresh status, auto-refresh toggle, and interval selection",
+            "dependencies": [],
+            "details": "Implement the RefreshControl component with useState hooks for isRefreshing, autoRefresh, and refreshInterval states. Create the UI structure including the manual refresh button, auto-refresh checkbox toggle, interval dropdown selector (30s, 1min, 5min options), and last refresh timestamp display. Import and configure useQueryClient from React Query for cache invalidation. Set up the component structure with proper TypeScript interfaces for props and state types.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement Manual Refresh with Loading States",
+            "description": "Add manual refresh functionality with visual loading feedback and proper error handling",
+            "dependencies": [
+              "8.1"
+            ],
+            "details": "Create the handleManualRefresh async function that sets isRefreshing to true, calls queryClient.invalidateQueries(['emails']) to trigger data refetch, handles any errors with try-catch block and user notification, and sets isRefreshing back to false when complete. Add disabled state to the refresh button during refresh operation. Implement the spinning animation CSS for the refresh icon using @keyframes rotation with 360deg transform. Add visual feedback with button state changes and loading text ('Refreshing...' vs 'Refresh').",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Build Auto-refresh Timer Logic",
+            "description": "Implement the auto-refresh mechanism with configurable intervals and proper cleanup",
+            "dependencies": [
+              "8.1"
+            ],
+            "details": "Implement useEffect hook that watches autoRefresh and refreshInterval dependencies. When autoRefresh is enabled, create setInterval that calls queryClient.invalidateQueries(['emails']) at the specified interval (converted from seconds to milliseconds). Ensure proper cleanup by returning clearInterval function from useEffect to prevent memory leaks. Handle edge cases like component unmounting during refresh and interval changes while auto-refresh is active. Add logic to update last refresh timestamp after each successful refresh operation.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Add Last Refresh Timestamp Display",
+            "description": "Implement timestamp tracking and formatting for displaying when the last refresh occurred",
+            "dependencies": [
+              "8.2",
+              "8.3"
+            ],
+            "details": "Create lastRefresh state using useState with Date object. Update timestamp after each successful manual or auto-refresh completion. Implement formatTime utility function that converts timestamp to relative time format (e.g., 'just now', '2 minutes ago', '1 hour ago') using Date comparison logic. Consider using a library like date-fns or moment.js for more robust time formatting if needed. Update the display to show 'Last refresh: never' on initial load before first refresh. Add real-time updates to the relative time display using a separate useEffect with 1-second interval for 'just now' to '1 minute ago' transitions.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Optimize Print Layout and CSS",
+        "description": "Implement print-specific CSS for landscape US Letter format with proper pagination and color preservation",
+        "details": "Create comprehensive print styles:\n```css\n@media print {\n  @page {\n    size: 11in 8.5in landscape;\n    margin: 0.5in;\n  }\n  \n  body {\n    font-size: 10pt;\n    line-height: 1.2;\n  }\n  \n  /* Hide non-printable elements */\n  .email-actions,\n  .refresh-control,\n  .settings-button,\n  button,\n  .modal {\n    display: none !important;\n  }\n  \n  /* Preserve background colors for categorization */\n  .email-row {\n    -webkit-print-color-adjust: exact;\n    print-color-adjust: exact;\n    page-break-inside: avoid;\n  }\n  \n  /* Add header/footer */\n  @top-center {\n    content: \"Gmail Correspondence Manager\";\n  }\n  \n  @bottom-right {\n    content: \"Page \" counter(page) \" of \" counter(pages);\n  }\n  \n  @bottom-left {\n    content: \"Printed: \" attr(data-print-date);\n  }\n  \n  /* Ensure table headers repeat on each page */\n  thead {\n    display: table-header-group;\n  }\n  \n  /* Prevent orphaned rows */\n  .email-list {\n    orphans: 3;\n    widows: 3;\n  }\n}\n```\n\nAdd JavaScript to inject print date:\n```javascript\nwindow.addEventListener('beforeprint', () => {\n  document.body.setAttribute('data-print-date', new Date().toLocaleString());\n});\n```",
+        "testStrategy": "Test print preview in multiple browsers, verify landscape orientation, check color preservation in print, verify no content cut-off at page boundaries, test header/footer display",
+        "priority": "low",
+        "dependencies": [
+          4,
+          5
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Create comprehensive print media queries with page setup",
+            "description": "Implement the @media print and @page rules with landscape orientation, margins, and basic typography adjustments for optimal print layout",
+            "dependencies": [],
+            "details": "Set up the foundation of print styles including @media print block, @page rule with 11in x 8.5in landscape dimensions and 0.5in margins, body font-size of 10pt with line-height 1.2, and basic print-specific resets. This establishes the core print layout structure that all other print styles will build upon.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Implement element hiding for non-printable components",
+            "description": "Hide all interactive and non-essential UI elements that should not appear in printed output",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "Add CSS rules to hide .email-actions, .refresh-control, .settings-button, all button elements, .modal, and any other interactive controls. Use display: none !important to ensure these elements are completely removed from print layout. Audit the application to identify any additional elements that should be hidden during printing.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Add page headers/footers with dynamic content",
+            "description": "Implement CSS-generated content for page headers and footers, including JavaScript to inject dynamic print date",
+            "dependencies": [
+              "9.1"
+            ],
+            "details": "Implement @top-center, @bottom-right, and @bottom-left page margin boxes with appropriate content. Add JavaScript beforeprint event listener to inject current date/time as data-print-date attribute. Ensure headers show 'Gmail Correspondence Manager', footers show page numbers and print timestamp. Handle fallback for browsers that don't support CSS page margin boxes.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Ensure color preservation and proper page breaks",
+            "description": "Configure print color settings and implement intelligent page break controls to prevent content fragmentation",
+            "dependencies": [
+              "9.1",
+              "9.2"
+            ],
+            "details": "Apply -webkit-print-color-adjust: exact and print-color-adjust: exact to .email-row elements for color preservation. Add page-break-inside: avoid to prevent rows from splitting across pages. Configure thead with display: table-header-group for repeating headers. Set orphans: 3 and widows: 3 on .email-list to prevent isolated content. Test background colors and borders are preserved in print output.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Test and fix cross-browser print compatibility issues",
+            "description": "Thoroughly test print functionality across major browsers and fix any compatibility issues",
+            "dependencies": [
+              "9.1",
+              "9.2",
+              "9.3",
+              "9.4"
+            ],
+            "details": "Test print preview in Chrome, Firefox, Safari, and Edge. Verify landscape orientation renders correctly, check that colors are preserved, ensure headers/footers display properly, confirm no content is cut off at page boundaries. Document any browser-specific CSS hacks or JavaScript polyfills needed. Create fallback styles for browsers that don't support certain print features. Validate final output meets requirements for US Letter landscape format.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Implement Security, Error Handling, and Performance Optimization",
+        "description": "Add comprehensive security measures, error boundaries, performance monitoring, and optimization for production deployment",
+        "details": "Security implementation:\n```typescript\n// Rate limiting\nimport rateLimit from 'express-rate-limit';\nconst apiLimiter = rateLimit({\n  windowMs: 15 * 60 * 1000,\n  max: 100\n});\n\n// CSRF protection\nimport csrf from 'csurf';\napp.use(csrf({ cookie: true }));\n\n// Content Security Policy\napp.use(helmet.contentSecurityPolicy({\n  directives: {\n    defaultSrc: [\"'self'\"],\n    scriptSrc: [\"'self'\", \"'unsafe-inline'\"],\n    styleSrc: [\"'self'\", \"'unsafe-inline'\"]\n  }\n}));\n\n// Session timeout\napp.use(session({\n  secret: process.env.SESSION_SECRET,\n  resave: false,\n  saveUninitialized: false,\n  cookie: {\n    secure: true,\n    httpOnly: true,\n    maxAge: 30 * 60 * 1000 // 30 minutes\n  }\n}));\n```\n\nError handling:\n```typescript\n// React Error Boundary\nclass ErrorBoundary extends React.Component {\n  componentDidCatch(error, errorInfo) {\n    console.error('Error caught:', error, errorInfo);\n    // Send to monitoring service\n  }\n  \n  render() {\n    if (this.state.hasError) {\n      return <ErrorFallback />;\n    }\n    return this.props.children;\n  }\n}\n\n// API error handler\napp.use((err, req, res, next) => {\n  logger.error(err);\n  res.status(err.status || 500).json({\n    error: process.env.NODE_ENV === 'production' \n      ? 'An error occurred' \n      : err.message\n  });\n});\n```\n\nPerformance optimization:\n- Implement React.memo for email list items\n- Use virtual scrolling for large email lists\n- Add Redis caching for Gmail API responses\n- Implement request batching\n- Add performance monitoring with Web Vitals",
+        "testStrategy": "Test rate limiting with multiple requests, verify CSRF protection, test session timeout, verify error boundaries catch React errors, load test with 1000+ emails, measure and verify performance metrics meet requirements",
+        "priority": "high",
+        "dependencies": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "status": "pending",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Implement Express Rate Limiting Middleware",
+            "description": "Set up and configure express-rate-limit middleware with customizable limits per endpoint and IP-based tracking",
+            "dependencies": [],
+            "details": "Install express-rate-limit package. Create rate limiting configuration with different limits for authentication endpoints (5 requests/15min), API endpoints (100 requests/15min), and public endpoints (200 requests/15min). Implement custom key generator for user-specific rate limiting. Add rate limit headers to responses. Store rate limit data in Redis for distributed systems support.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Configure CSRF Protection Across All Endpoints",
+            "description": "Implement CSRF token generation and validation using csurf middleware for all state-changing operations",
+            "dependencies": [],
+            "details": "Install csurf and cookie-parser packages. Configure CSRF middleware with secure cookie settings. Create CSRF token endpoint for frontend to fetch tokens. Modify all POST, PUT, DELETE endpoints to validate CSRF tokens. Update frontend to include CSRF tokens in all requests. Handle CSRF validation errors with proper error messages.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Set Up Content Security Policy and Security Headers",
+            "description": "Configure helmet.js with strict CSP directives and additional security headers for production environment",
+            "dependencies": [],
+            "details": "Install helmet package. Configure Content Security Policy with strict directives for script-src, style-src, img-src, connect-src. Enable HSTS with includeSubDomains and preload. Configure X-Frame-Options, X-Content-Type-Options, and Referrer-Policy headers. Create environment-specific CSP configurations. Add nonce generation for inline scripts if needed.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Create React Error Boundaries with Fallback UI",
+            "description": "Implement comprehensive error boundary components to catch and handle React rendering errors gracefully",
+            "dependencies": [],
+            "details": "Create ErrorBoundary component class with componentDidCatch lifecycle method. Design fallback UI components for different error scenarios (network errors, authentication errors, general errors). Implement error recovery mechanisms with retry buttons. Add error reporting to monitoring service. Create specialized error boundaries for different app sections. Implement error context provider for child components.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Build Centralized Error Logging and Monitoring System",
+            "description": "Set up comprehensive error tracking with structured logging and integration with monitoring services",
+            "dependencies": [
+              "10.4"
+            ],
+            "details": "Install winston for structured logging and Sentry SDK for error monitoring. Create centralized error handler middleware for Express. Configure different log levels (error, warn, info, debug). Implement log rotation and archival. Set up Sentry with source maps for production. Create custom error classes for different error types. Add request context to all error logs.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 6,
+            "title": "Implement Virtual Scrolling for Large Email Lists",
+            "description": "Add react-window or react-virtualized to efficiently render large email lists with minimal DOM nodes",
+            "dependencies": [],
+            "details": "Install react-window and react-window-infinite-loader. Create VirtualEmailList component with FixedSizeList. Implement dynamic item height calculation for variable content. Add scroll position persistence. Implement keyboard navigation support. Create loading indicators for virtualized items. Optimize re-render performance with React.memo.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 7,
+            "title": "Add Redis Caching Layer with TTL Strategies",
+            "description": "Implement Redis caching for Gmail API responses with intelligent cache invalidation and TTL management",
+            "dependencies": [],
+            "details": "Install redis and ioredis packages. Create Redis connection pool with retry logic. Implement cache key generation strategy for emails, labels, and user data. Set appropriate TTL values (5min for email list, 1hr for labels). Create cache invalidation on email actions. Implement cache warming strategies. Add cache hit/miss metrics. Create fallback mechanism when Redis is unavailable.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 8,
+            "title": "Create Request Batching for Gmail API Calls",
+            "description": "Implement batch processing to combine multiple Gmail API requests and reduce API quota usage",
+            "dependencies": [
+              "10.7"
+            ],
+            "details": "Create BatchProcessor class with configurable batch size and timeout. Implement request queue with priority support. Create batch request builder for Gmail API batch endpoint. Handle partial batch failures with retry logic. Implement request deduplication within batches. Add metrics for batch efficiency. Create separate batching strategies for different operation types.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 9,
+            "title": "Implement Performance Monitoring with Web Vitals",
+            "description": "Set up comprehensive performance monitoring using Web Vitals and custom performance metrics",
+            "dependencies": [],
+            "details": "Install web-vitals package. Implement monitoring for Core Web Vitals (LCP, FID, CLS). Create custom performance marks for email load time, action response time. Set up performance budget alerts. Implement Real User Monitoring (RUM) with sampling. Create performance dashboard endpoints. Add performance regression detection. Configure performance data reporting to analytics service.",
+            "status": "pending",
+            "testStrategy": ""
+          },
+          {
+            "id": 10,
+            "title": "Set Up Security Testing and Vulnerability Scanning",
+            "description": "Implement automated security testing suite with vulnerability scanning and penetration testing",
+            "dependencies": [
+              "10.1",
+              "10.2",
+              "10.3"
+            ],
+            "details": "Install and configure npm audit for dependency scanning. Set up OWASP ZAP for automated security testing. Create security test suite for authentication, authorization, and input validation. Implement SQL injection and XSS testing. Configure snyk for continuous vulnerability monitoring. Create pre-commit hooks for security checks. Set up security headers testing. Implement API penetration testing scenarios.",
+            "status": "pending",
+            "testStrategy": ""
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-09-01T22:57:29.633Z",
+      "updated": "2025-09-02T01:39:15.426Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

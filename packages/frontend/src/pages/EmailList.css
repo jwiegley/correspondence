@@ -1,0 +1,72 @@
+.email-list {
+  width: 100%;
+  background: white;
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+}
+
+.email-list-header {
+  display: grid;
+  grid-template-columns: 200px 1fr 120px 150px;
+  gap: 16px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid var(--color-border);
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.email-list-body {
+  max-height: calc(100vh - 200px);
+  overflow-y: auto;
+}
+
+.email-list-loading,
+.email-list-error,
+.email-list-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px;
+  color: var(--color-text-secondary);
+}
+
+.email-list-empty-hint {
+  margin-top: 8px;
+  font-size: 0.875rem;
+}
+
+.email-col-from {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.email-col-subject {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.email-col-date {
+  text-align: right;
+}
+
+.email-col-actions {
+  text-align: center;
+}
+
+@media print {
+  .email-list-header {
+    position: sticky;
+    top: 0;
+    background: white;
+  }
+  
+  .email-col-actions {
+    display: none;
+  }
+}

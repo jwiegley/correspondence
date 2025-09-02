@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: correspondence-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - correspondence-network
+
+  backend:
+    build:
+      context: ./packages/backend
+      dockerfile: Dockerfile.dev
+    container_name: correspondence-backend
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - REDIS_URL=redis://redis:6379
+      - FRONTEND_URL=http://localhost:3000
+    env_file:
+      - ./packages/backend/.env
+    volumes:
+      - ./packages/backend:/app
+      - /app/node_modules
+      - ./packages/shared:/shared
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - correspondence-network
+    command: npm run dev
+
+  frontend:
+    build:
+      context: ./packages/frontend
+      dockerfile: Dockerfile.dev
+    container_name: correspondence-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./packages/frontend:/app
+      - /app/node_modules
+      - ./packages/shared:/shared
+    networks:
+      - correspondence-network
+    command: npm run dev
+
+volumes:
+  redis_data:
+
+networks:
+  correspondence-network:
+    driver: bridge
