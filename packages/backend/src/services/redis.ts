@@ -149,9 +149,29 @@ class RedisService {
   async deleteUserData(userId: string): Promise<void> {
     const tokenKey = `user:${userId}:tokens`;
     const profileKey = `user:${userId}:profile`;
+    const statusKey = `user:${userId}:connection_status`;
     
-    await this.client.del([tokenKey, profileKey]);
+    await this.client.del([tokenKey, profileKey, statusKey]);
     logger.info(`Deleted all data for user ${userId}`);
+  }
+
+  /**
+   * Store user connection status
+   */
+  async setUserConnectionStatus(userId: string, status: string): Promise<void> {
+    const key = `user:${userId}:connection_status`;
+    const ttl = 60 * 60 * 24; // 24 hours
+    
+    await this.client.setEx(key, ttl, status);
+    logger.debug(`Updated connection status for user ${userId}`);
+  }
+
+  /**
+   * Get user connection status
+   */
+  async getUserConnectionStatus(userId: string): Promise<string | null> {
+    const key = `user:${userId}:connection_status`;
+    return await this.client.get(key);
   }
 
   /**

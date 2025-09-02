@@ -1,0 +1,157 @@
+/* Modal backdrop that covers the entire screen */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+  animation: modal-backdrop-enter 0.2s ease-out;
+}
+
+/* Modal content container */
+.modal-content {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 100%;
+  max-width: 500px;
+  overflow: hidden;
+  animation: modal-content-enter 0.2s ease-out;
+  position: relative;
+  outline: none;
+}
+
+/* Modal header */
+.modal-header {
+  padding: 1.5rem 1.5rem 0 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  line-height: 1.2;
+}
+
+/* Close button */
+.modal-close-button {
+  background: none;
+  border: none;
+  padding: 0.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 1rem;
+  flex-shrink: 0;
+}
+
+.modal-close-button:hover {
+  color: #374151;
+  background-color: #f3f4f6;
+}
+
+.modal-close-button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.modal-close-button svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Modal body */
+.modal-body {
+  padding: 0 1.5rem 1.5rem;
+  overflow-y: auto;
+  max-height: calc(90vh - 120px);
+}
+
+/* Animations */
+@keyframes modal-backdrop-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-content-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .modal-content {
+    margin: 1rem;
+    max-width: calc(100vw - 2rem);
+    max-height: calc(100vh - 2rem);
+  }
+  
+  .modal-header {
+    padding: 1rem 1rem 0 1rem;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .modal-title {
+    font-size: 1.125rem;
+  }
+  
+  .modal-body {
+    padding: 0 1rem 1rem;
+    max-height: calc(100vh - 100px);
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .modal-content {
+    background: #1f2937;
+    color: #f9fafb;
+  }
+  
+  .modal-header {
+    border-bottom-color: #374151;
+  }
+  
+  .modal-title {
+    color: #f9fafb;
+  }
+  
+  .modal-close-button {
+    color: #9ca3af;
+  }
+  
+  .modal-close-button:hover {
+    color: #f3f4f6;
+    background-color: #374151;
+  }
+}

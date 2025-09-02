@@ -1,10 +1,18 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import passport from 'passport';
+import { google } from 'googleapis';
 import { logger } from '../utils/logger';
 import { redisService } from '../services/redis';
 import { requireAuth, logAuthenticatedRequest } from '../middleware/auth';
 
 const router = Router();
+
+// Initialize OAuth2 client for Gmail API calls
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_CALLBACK_URL
+);
 
 // OAuth error types
 enum OAuthErrorType {
@@ -284,6 +292,232 @@ router.get('/profile', requireAuth, async (req: Request, res: Response) => {
     res.status(500).json({
       error: 'Profile fetch failed',
       message: 'Error retrieving user profile'
+    });
+  }
+});
+
+/**
+ * Test Gmail connection endpoint
+ */
+router.get('/test-connection', requireAuth, logAuthenticatedRequest, async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  
+  try {
+    // Get user's OAuth tokens from Redis
+    const tokenData = await redisService.getUserTokens(userId);
+    if (!tokenData) {
+      return res.status(401).json({
+        error: 'No authentication tokens found',
+        message: 'Please reconnect your Gmail account',
+        code: 'NO_TOKENS'
+      });
+    }
+    
+    const tokens = JSON.parse(tokenData);
+    
+    // Check if access token exists
+    if (!tokens.access_token) {
+      return res.status(401).json({
+        error: 'Invalid authentication tokens',
+        message: 'Please reconnect your Gmail account',
+        code: 'INVALID_TOKENS'
+      });
+    }
+    
+    // Test the Gmail API connection by fetching user profile
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    oauth2Client.setCredentials(tokens);
+    
+    // Make a test API call to verify the connection
+    const profileResponse = await gmail.users.getProfile({
+      userId: 'me',
+    });
+    
+    if (!profileResponse.data.emailAddress) {
+      throw new Error('Unable to retrieve user profile');
+    }
+    
+    // Update last successful connection timestamp
+    const connectionStatus = {
+      isConnected: true,
+      email: profileResponse.data.emailAddress,
+      lastSync: new Date().toISOString(),
+      tokenExpiry: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
+      scopes: tokens.scope ? tokens.scope.split(' ') : [],
+      messagesTotal: profileResponse.data.messagesTotal || 0,
+      threadsTotal: profileResponse.data.threadsTotal || 0
+    };
+    
+    // Store the connection status in Redis
+    await redisService.setUserConnectionStatus(userId, JSON.stringify(connectionStatus));
+    
+    logger.info(`Connection test successful for user ${userId}: ${profileResponse.data.emailAddress}`);
+    
+    res.json({
+      success: true,
+      message: 'Gmail connection is working properly',
+      ...connectionStatus
+    });
+    
+  } catch (error: any) {
+    logger.error(`Connection test failed for user ${userId}:`, error);
+    
+    // Handle specific error types
+    let errorResponse = {
+      success: false,
+      error: 'Connection test failed',
+      message: 'Unable to connect to Gmail',
+      code: 'CONNECTION_FAILED'
+    };
+    
+    if (error.code === 401 || error.status === 401) {
+      errorResponse = {
+        success: false,
+        error: 'Authentication expired',
+        message: 'Your Gmail connection has expired. Please reconnect.',
+        code: 'AUTH_EXPIRED'
+      };
+    } else if (error.code === 403 || error.status === 403) {
+      errorResponse = {
+        success: false,
+        error: 'Permission denied',
+        message: 'Gmail access permissions are insufficient. Please reconnect and grant all permissions.',
+        code: 'INSUFFICIENT_PERMISSIONS'
+      };
+    } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+      errorResponse = {
+        success: false,
+        error: 'Network error',
+        message: 'Unable to reach Gmail servers. Please check your internet connection.',
+        code: 'NETWORK_ERROR'
+      };
+    } else if (error.message?.includes('quota')) {
+      errorResponse = {
+        success: false,
+        error: 'API quota exceeded',
+        message: 'Gmail API quota exceeded. Please try again later.',
+        code: 'QUOTA_EXCEEDED'
+      };
+    }
+    
+    // Store failed connection status
+    const failedStatus = {
+      isConnected: false,
+      email: req.user?.email || null,
+      lastSync: null,
+      error: errorResponse.message,
+      lastAttempt: new Date().toISOString()
+    };
+    
+    await redisService.setUserConnectionStatus(userId, JSON.stringify(failedStatus));
+    
+    res.status(error.status || 500).json(errorResponse);
+  }
+});
+
+/**
+ * Get connection status endpoint
+ */
+router.get('/connection-status', requireAuth, async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  
+  try {
+    const statusData = await redisService.getUserConnectionStatus(userId);
+    if (!statusData) {
+      return res.json({
+        isConnected: false,
+        email: req.user?.email || null,
+        lastSync: null,
+        message: 'Connection status not available'
+      });
+    }
+    
+    const status = JSON.parse(statusData);
+    res.json(status);
+    
+  } catch (error) {
+    logger.error(`Connection status fetch error for user ${userId}:`, error);
+    res.status(500).json({
+      error: 'Unable to fetch connection status',
+      message: 'Please try again later'
+    });
+  }
+});
+
+/**
+ * Disconnect OAuth endpoint - revokes tokens and clears user data
+ */
+router.post('/disconnect', requireAuth, logAuthenticatedRequest, async (req: Request, res: Response) => {
+  const userId = req.user!.id;
+  
+  try {
+    logger.info(`OAuth disconnect requested for user ${userId}`);
+    
+    // Get user's OAuth tokens before revoking
+    const tokenData = await redisService.getUserTokens(userId);
+    
+    if (tokenData) {
+      try {
+        const tokens = JSON.parse(tokenData);
+        
+        // Revoke tokens via Google OAuth2 API if we have them
+        if (tokens.access_token) {
+          oauth2Client.setCredentials(tokens);
+          
+          // Revoke the refresh token (this also revokes the access token)
+          if (tokens.refresh_token) {
+            await oauth2Client.revokeToken(tokens.refresh_token);
+            logger.info(`Revoked refresh token for user ${userId}`);
+          } else {
+            // If no refresh token, revoke the access token
+            await oauth2Client.revokeToken(tokens.access_token);
+            logger.info(`Revoked access token for user ${userId}`);
+          }
+        }
+      } catch (revokeError: any) {
+        // Log the error but don't fail the disconnect process
+        // The tokens might already be expired or revoked
+        logger.warn(`Token revocation warning for user ${userId}:`, revokeError.message);
+      }
+    }
+    
+    // Clear all user data from Redis regardless of token revocation success
+    await redisService.deleteUserData(userId);
+    
+    // Update connection status to disconnected
+    const disconnectedStatus = {
+      isConnected: false,
+      email: req.user?.email || null,
+      lastSync: null,
+      disconnectedAt: new Date().toISOString(),
+      message: 'Successfully disconnected from Gmail'
+    };
+    
+    await redisService.setUserConnectionStatus(userId, JSON.stringify(disconnectedStatus));
+    
+    logger.info(`OAuth disconnect completed for user ${userId}`);
+    
+    res.json({
+      success: true,
+      message: 'Successfully disconnected from Gmail',
+      disconnectedAt: new Date().toISOString()
+    });
+    
+  } catch (error: any) {
+    logger.error(`OAuth disconnect failed for user ${userId}:`, error);
+    
+    // Even if there's an error, try to clear local data
+    try {
+      await redisService.deleteUserData(userId);
+    } catch (cleanupError) {
+      logger.error(`Failed to cleanup data after disconnect error for user ${userId}:`, cleanupError);
+    }
+    
+    res.status(500).json({
+      success: false,
+      error: 'Disconnect failed',
+      message: 'There was an error disconnecting from Gmail. Your local data has been cleared.',
+      code: 'DISCONNECT_ERROR'
     });
   }
 });

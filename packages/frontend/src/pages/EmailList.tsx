@@ -3,17 +3,8 @@ import { useState, useMemo } from 'react';
 import axios from 'axios';
 import EmailListItem from '../components/EmailListItem';
 import { useVirtualScroll } from '../hooks/useVirtualScroll';
+import { Email } from '../../../shared/src/types/email';
 import './EmailList.css';
-
-interface Email {
-  id: string;
-  subject: string;
-  from: string;
-  date: string;
-  snippet: string;
-  labels: string[];
-  isUnread: boolean;
-}
 
 type SortField = 'date' | 'from' | 'subject';
 type SortDirection = 'asc' | 'desc';

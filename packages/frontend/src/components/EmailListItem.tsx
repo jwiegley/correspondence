@@ -1,15 +1,8 @@
 import clsx from 'clsx';
+import EmailActions from './EmailActions';
 import './EmailListItem.css';
 
-interface Email {
-  id: string;
-  subject: string;
-  from: string;
-  date: string;
-  snippet: string;
-  labels: string[];
-  isUnread: boolean;
-}
+import { Email } from '../../../shared/src/types/email';
 
 interface EmailListItemProps {
   email: Email;
@@ -17,7 +10,7 @@ interface EmailListItemProps {
 
 export default function EmailListItem({ email }: EmailListItemProps) {
   const hasNotify = email.labels.includes('Notify');
-  const hasActionItem = email.labels.includes('Action-Item');
+  const hasActionItem = email.labels.includes('Action-Item') || email.labels.includes('Action Item');
   
   const getBackgroundColor = () => {
     if (hasNotify && hasActionItem) return 'email-both';
@@ -59,15 +52,12 @@ export default function EmailListItem({ email }: EmailListItemProps) {
       </div>
       <div className="email-col-date">{formatDate(email.date)}</div>
       <div className="email-col-actions">
-        <button className="email-action-btn" title="Mark as read">
-          ✓
-        </button>
-        <button className="email-action-btn" title="Toggle Notify">
-          N
-        </button>
-        <button className="email-action-btn" title="Toggle Action">
-          A
-        </button>
+        <EmailActions
+          emailId={email.id}
+          isUnread={email.isUnread}
+          hasNotifyLabel={hasNotify}
+          hasActionItemLabel={hasActionItem}
+        />
       </div>
     </div>
   );

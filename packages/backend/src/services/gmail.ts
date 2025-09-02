@@ -1405,6 +1405,248 @@ class GmailService {
       logger.warn(`Error clearing Gmail cache for user ${userId}:`, error);
     }
   }
+
+  /**
+   * Get the current history ID for a user's mailbox
+   */
+  async getHistoryId(userId: string): Promise<string> {
+    this.validateUserId(userId);
+    await this.ensureAuthenticated(userId);
+
+    return await this.executeWithRetry(
+      async () => {
+        const response = await this.gmail!.users.getProfile({
+          userId: 'me',
+        });
+
+        if (!response.data.historyId) {
+          throw new GmailError('No history ID returned from Gmail API', 'NO_HISTORY_ID');
+        }
+
+        logger.debug(`Got history ID ${response.data.historyId} for user ${userId}`);
+        return response.data.historyId;
+      },
+      'getHistoryId',
+      userId
+    );
+  }
+
+  /**
+   * Get history changes since a specific history ID
+   */
+  async getHistoryChanges(userId: string, startHistoryId: string, pageToken?: string): Promise<{
+    history: gmail_v1.Schema$History[];
+    nextPageToken?: string;
+    newHistoryId: string;
+  }> {
+    this.validateUserId(userId);
+    await this.ensureAuthenticated(userId);
+
+    if (!startHistoryId) {
+      throw new GmailValidationError('Start history ID is required');
+    }
+
+    return await this.executeWithRetry(
+      async () => {
+        const response = await this.gmail!.users.history.list({
+          userId: 'me',
+          startHistoryId: startHistoryId,
+          pageToken: pageToken,
+          maxResults: 500, // Maximum allowed by Gmail API
+          historyTypes: ['messageAdded', 'messageDeleted', 'labelAdded', 'labelRemoved'],
+        });
+
+        const history = response.data.history || [];
+        const nextPageToken = response.data.nextPageToken;
+        const newHistoryId = response.data.historyId || startHistoryId;
+
+        logger.debug(`Retrieved ${history.length} history entries for user ${userId}`, {
+          startHistoryId,
+          newHistoryId,
+          hasNextPage: !!nextPageToken,
+        });
+
+        return {
+          history,
+          nextPageToken,
+          newHistoryId,
+        };
+      },
+      'getHistoryChanges',
+      userId
+    );
+  }
+
+  /**
+   * Perform full initial sync to get current state and history ID
+   */
+  async performInitialSync(userId: string): Promise<{
+    emails: Email[];
+    historyId: string;
+    totalCount: number;
+  }> {
+    this.validateUserId(userId);
+    await this.ensureAuthenticated(userId);
+
+    logger.info(`Performing initial sync for user ${userId}`);
+
+    return await this.executeWithRetry(
+      async () => {
+        // Get current history ID first
+        const historyId = await this.getHistoryId(userId);
+
+        // Fetch emails using existing fetchEmails method
+        const emailResponse = await this.fetchEmails(userId, {
+          pageSize: 100, // Larger batch for initial sync
+        });
+
+        logger.info(`Initial sync completed for user ${userId}`, {
+          emailCount: emailResponse.emails.length,
+          historyId,
+        });
+
+        return {
+          emails: emailResponse.emails,
+          historyId,
+          totalCount: emailResponse.totalCount,
+        };
+      },
+      'performInitialSync',
+      userId
+    );
+  }
+
+  /**
+   * Process a single history entry and return affected message IDs
+   */
+  private processHistoryEntry(historyEntry: gmail_v1.Schema$History): {
+    addedMessageIds: string[];
+    deletedMessageIds: string[];
+    labelChangedMessageIds: string[];
+  } {
+    const addedMessageIds: string[] = [];
+    const deletedMessageIds: string[] = [];
+    const labelChangedMessageIds: string[] = [];
+
+    // Process message additions
+    if (historyEntry.messagesAdded) {
+      for (const added of historyEntry.messagesAdded) {
+        if (added.message?.id) {
+          addedMessageIds.push(added.message.id);
+        }
+      }
+    }
+
+    // Process message deletions
+    if (historyEntry.messagesDeleted) {
+      for (const deleted of historyEntry.messagesDeleted) {
+        if (deleted.message?.id) {
+          deletedMessageIds.push(deleted.message.id);
+        }
+      }
+    }
+
+    // Process label changes (both additions and removals)
+    if (historyEntry.labelsAdded) {
+      for (const labelAdded of historyEntry.labelsAdded) {
+        if (labelAdded.message?.id) {
+          labelChangedMessageIds.push(labelAdded.message.id);
+        }
+      }
+    }
+
+    if (historyEntry.labelsRemoved) {
+      for (const labelRemoved of historyEntry.labelsRemoved) {
+        if (labelRemoved.message?.id) {
+          labelChangedMessageIds.push(labelRemoved.message.id);
+        }
+      }
+    }
+
+    return {
+      addedMessageIds,
+      deletedMessageIds,
+      labelChangedMessageIds,
+    };
+  }
+
+  /**
+   * Process history changes and return structured change data
+   */
+  async processHistoryChanges(userId: string, startHistoryId: string): Promise<{
+    changes: {
+      addedMessages: Email[];
+      deletedMessageIds: string[];
+      updatedMessages: Email[];
+    };
+    newHistoryId: string;
+    hasMoreChanges: boolean;
+  }> {
+    this.validateUserId(userId);
+
+    let allAddedMessageIds = new Set<string>();
+    let allDeletedMessageIds = new Set<string>();
+    let allLabelChangedMessageIds = new Set<string>();
+    let currentHistoryId = startHistoryId;
+    let hasMoreChanges = false;
+    let nextPageToken: string | undefined;
+
+    // Fetch all history changes (handle pagination)
+    do {
+      const historyResponse = await this.getHistoryChanges(userId, currentHistoryId, nextPageToken);
+      
+      // Process each history entry
+      for (const historyEntry of historyResponse.history) {
+        const changes = this.processHistoryEntry(historyEntry);
+        
+        changes.addedMessageIds.forEach(id => allAddedMessageIds.add(id));
+        changes.deletedMessageIds.forEach(id => allDeletedMessageIds.add(id));
+        changes.labelChangedMessageIds.forEach(id => allLabelChangedMessageIds.add(id));
+      }
+
+      currentHistoryId = historyResponse.newHistoryId;
+      nextPageToken = historyResponse.nextPageToken;
+      hasMoreChanges = !!nextPageToken;
+
+      // Break if no more pages (for this batch)
+      if (!nextPageToken) {
+        break;
+      }
+    } while (nextPageToken);
+
+    // Remove deleted messages from other sets to avoid conflicts
+    allDeletedMessageIds.forEach(id => {
+      allAddedMessageIds.delete(id);
+      allLabelChangedMessageIds.delete(id);
+    });
+
+    // Fetch full details for added and updated messages
+    const addedMessageIds = Array.from(allAddedMessageIds);
+    const labelChangedMessageIds = Array.from(allLabelChangedMessageIds);
+    const deletedMessageIds = Array.from(allDeletedMessageIds);
+
+    const [addedMessages, updatedMessages] = await Promise.all([
+      addedMessageIds.length > 0 ? this.fetchMessageDetails(userId, addedMessageIds) : [],
+      labelChangedMessageIds.length > 0 ? this.fetchMessageDetails(userId, labelChangedMessageIds) : [],
+    ]);
+
+    logger.info(`Processed history changes for user ${userId}`, {
+      addedCount: addedMessages.length,
+      deletedCount: deletedMessageIds.length,
+      updatedCount: updatedMessages.length,
+      newHistoryId: currentHistoryId,
+    });
+
+    return {
+      changes: {
+        addedMessages,
+        deletedMessageIds,
+        updatedMessages,
+      },
+      newHistoryId: currentHistoryId,
+      hasMoreChanges,
+    };
+  }
 }
 
 // Export singleton instance

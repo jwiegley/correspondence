@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import EmailList from './pages/EmailList';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -102,11 +103,13 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <Router>
-          <div className="app">
-            <AppRoutes />
-          </div>
-        </Router>
+        <ToastProvider>
+          <Router>
+            <div className="app">
+              <AppRoutes />
+            </div>
+          </Router>
+        </ToastProvider>
       </AuthProvider>
     </QueryClientProvider>
   );
