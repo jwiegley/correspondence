@@ -6,7 +6,6 @@ import session from 'express-session';
 import connectRedis from 'connect-redis';
 import { createServer } from 'http';
 import { logger } from './utils/logger';
-import { errorHandler } from './middleware/errorHandler';
 import { errorHandler as enhancedErrorHandler, breadcrumbMiddleware } from './middleware/errorMonitoring';
 import { securityMiddleware } from './middleware/security';
 import { rateLimiters, getRateLimitMetrics } from './middleware/rateLimiting';
@@ -92,7 +91,7 @@ app.use('/auth', rateLimiters.auth, authRoutes);
 app.use('/api', rateLimiters.api, apiRoutes);
 
 // Health check with rate limiting metrics
-app.get('/health', rateLimiters.public, async (req, res) => {
+app.get('/health', rateLimiters.public, async (_req, res) => {
   const redisHealthy = await redisService.healthCheck();
   const redisStats = await redisService.getStats();
   const webSocketHealth = webSocketService.healthCheck();
