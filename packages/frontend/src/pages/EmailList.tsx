@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useState, useMemo } from 'react';
 import axios from 'axios';
 import EmailListItem from '../components/EmailListItem';
+import RefreshControl from '../components/RefreshControl';
 import { useVirtualScroll } from '../hooks/useVirtualScroll';
 import { Email } from '../../../shared/src/types/email';
 import './EmailList.css';
@@ -148,6 +149,8 @@ export default function EmailList() {
           {sortedAndFilteredEmails.length} emails
         </div>
       </div>
+
+      <RefreshControl />
 
       <div className="email-list-header">
         <div 

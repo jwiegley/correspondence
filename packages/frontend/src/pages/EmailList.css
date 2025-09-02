@@ -140,26 +140,54 @@
 @media print {
   .email-list-controls,
   .performance-controls {
-    display: none;
+    display: none !important;
+  }
+  
+  .email-list {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    box-shadow: none !important;
+    border: 1pt solid #e5e7eb !important;
   }
   
   .email-list-header {
-    position: sticky;
-    top: 0;
-    background: white;
-    grid-template-columns: 200px 1fr 120px;
+    position: static !important;
+    top: auto !important;
+    background: white !important;
+    grid-template-columns: 200px 1fr 120px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    font-weight: 600 !important;
+    border-bottom: 2pt solid #374151 !important;
   }
   
   .email-col-actions {
-    display: none;
+    display: none !important;
+  }
+  
+  .email-col-from,
+  .email-col-subject,
+  .email-col-date {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   
   .sortable {
-    cursor: default;
+    cursor: default !important;
+    text-decoration: none !important;
   }
   
+  .email-count {
+    display: none !important;
+  }
+  
+  /* Enhanced page setup - this overrides the global @page rule for this component */
   @page {
-    size: landscape;
+    size: 11in 8.5in landscape;
     margin: 0.5in;
   }
 }

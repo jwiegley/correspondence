@@ -59,10 +59,57 @@
 
 @media print {
   .email-action-btn {
-    display: none;
+    display: none !important;
   }
   
   .email-list-item {
-    page-break-inside: avoid;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    cursor: default !important;
+    grid-template-columns: 200px 1fr 120px !important;
+    min-height: auto !important;
+    border-bottom: 1pt solid #e5e7eb !important;
+  }
+  
+  .email-list-item:hover {
+    background-color: inherit !important;
+  }
+  
+  /* Ensure category colors are preserved in print */
+  .email-unread {
+    background-color: var(--color-unread) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .email-notify {
+    background-color: var(--color-notify) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .email-action {
+    background-color: var(--color-action) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .email-both {
+    background-color: var(--color-both) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .email-subject,
+  .email-snippet {
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .email-snippet {
+    color: #555555 !important;
   }
 }

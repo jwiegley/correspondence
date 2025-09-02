@@ -70,3 +70,397 @@ body {
 .btn-secondary:hover {
   background-color: #f8f9fa;
 }
+
+/* Print Styles - Comprehensive Print Media Queries */
+@media print {
+  /* Page Setup - US Letter Landscape */
+  @page {
+    size: 11in 8.5in landscape;
+    margin: 0.5in;
+  }
+  
+  /* Typography and Layout Foundation */
+  body {
+    font-size: 10pt !important;
+    line-height: 1.2 !important;
+    background-color: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Reset margins and padding for print layout */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  /* Ensure proper text rendering */
+  h1, h2, h3, h4, h5, h6 {
+    font-size: 12pt !important;
+    font-weight: bold !important;
+    margin: 8pt 0 4pt 0 !important;
+    page-break-after: avoid;
+  }
+  
+  p {
+    margin: 4pt 0 !important;
+    orphans: 3;
+    widows: 3;
+  }
+  
+  /* Hide Non-Printable Interactive Elements */
+  .email-actions,
+  .refresh-control,
+  .settings-button,
+  .header-actions,
+  .btn,
+  button,
+  .modal,
+  .confirmation-overlay,
+  .confirmation-modal,
+  .toast-container,
+  .toast,
+  .connection-status,
+  .sync-status,
+  .error-display,
+  .email-action-btn,
+  .email-list-controls,
+  .performance-controls,
+  .filter-controls,
+  .settings-content,
+  .settings-section,
+  .settings-actions,
+  .app-info,
+  .permissions-info,
+  input[type="checkbox"],
+  input[type="text"],
+  input[type="email"],
+  select,
+  .sortable:hover,
+  .sortable:focus {
+    display: none !important;
+  }
+  
+  /* Hide specific action elements */
+  .email-col-actions {
+    display: none !important;
+  }
+  
+  /* Hide navigation and interactive elements */
+  nav,
+  .navigation,
+  .menu,
+  .toolbar,
+  .sidebar,
+  .dropdown,
+  form {
+    display: none !important;
+  }
+  
+  /* Hide loading states and spinners */
+  .loading,
+  .spinner,
+  .loading-container,
+  .email-list-loading,
+  .btn-spinner {
+    display: none !important;
+  }
+  
+  /* Hide scroll indicators and hover states */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  /* Remove cursor styles for non-interactive print */
+  .sortable {
+    cursor: default !important;
+  }
+  
+  .email-list-item {
+    cursor: default !important;
+  }
+  
+  .email-list-item:hover {
+    background-color: inherit !important;
+  }
+  
+  /* Page Headers and Footers */
+  @page {
+    @top-center {
+      content: "Gmail Correspondence Manager";
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 12pt;
+      font-weight: 600;
+      color: #374151;
+      padding: 8pt 0;
+      border-bottom: 1pt solid #e5e7eb;
+    }
+    
+    @bottom-left {
+      content: "Printed: " attr(data-print-date);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 9pt;
+      color: #6b7280;
+      padding: 8pt 0;
+    }
+    
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 9pt;
+      color: #6b7280;
+      padding: 8pt 0;
+    }
+  }
+  
+  /* Fallback headers/footers for browsers without page margin box support */
+  .print-header {
+    display: none;
+  }
+  
+  .print-footer {
+    display: none;
+  }
+  
+  .print-header,
+  .print-footer {
+    display: block !important;
+    width: 100%;
+    text-align: center;
+    font-size: 10pt;
+    color: #374151;
+    padding: 8pt 0;
+    page-break-inside: avoid;
+  }
+  
+  .print-header {
+    font-weight: 600;
+    border-bottom: 1pt solid #e5e7eb;
+    margin-bottom: 16pt;
+  }
+  
+  .print-footer {
+    font-size: 8pt;
+    color: #6b7280;
+    border-top: 1pt solid #e5e7eb;
+    margin-top: 16pt;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .print-footer-left,
+  .print-footer-right {
+    font-size: 8pt;
+    color: #6b7280;
+  }
+  
+  /* Color Preservation and Page Break Controls */
+  .email-list {
+    orphans: 3;
+    widows: 3;
+    page-break-inside: auto;
+  }
+  
+  .email-list-item,
+  .email-row {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 2pt;
+  }
+  
+  /* Preserve category background colors */
+  .email-notify,
+  .email-action,
+  .email-both,
+  .email-unread {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Ensure table headers repeat on each page */
+  .email-list-header,
+  thead {
+    display: table-header-group !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+  
+  /* Prevent awkward page breaks */
+  .email-list-body {
+    page-break-inside: auto;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+  
+  /* Ensure borders and outlines are preserved */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* Page break helpers */
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+  
+  .page-break-after {
+    page-break-after: always !important;
+    break-after: page !important;
+  }
+  
+  .avoid-page-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  
+  /* Ensure table layout is preserved */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+  
+  table, th, td {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    border-color: #e5e7eb !important;
+  }
+  
+  /* Cross-Browser Compatibility Fixes */
+  
+  /* Firefox specific fixes */
+  @-moz-document url-prefix() {
+    @page {
+      size: 11in 8.5in landscape;
+      margin: 0.5in;
+    }
+    
+    .email-list-item {
+      page-break-inside: avoid !important;
+      overflow: hidden !important;
+    }
+    
+    .email-list-header {
+      display: table-header-group !important;
+    }
+  }
+  
+  /* Safari/WebKit specific fixes */
+  @supports (-webkit-appearance: none) {
+    @page {
+      size: 11in 8.5in landscape;
+      margin: 0.5in;
+      -webkit-print-color-adjust: exact;
+    }
+    
+    body {
+      -webkit-print-color-adjust: exact !important;
+    }
+    
+    .email-list-item {
+      -webkit-column-break-inside: avoid !important;
+    }
+  }
+  
+  /* Edge specific fixes */
+  @supports (-ms-ime-align: auto) {
+    @page {
+      size: landscape;
+      margin: 0.5in;
+    }
+    
+    .email-list-item {
+      page-break-inside: avoid !important;
+      break-inside: avoid-page !important;
+    }
+  }
+  
+  /* Chrome specific optimizations */
+  @supports (background: -webkit-named-image(i)) {
+    .email-list-item {
+      -webkit-region-break-inside: avoid !important;
+    }
+  }
+  
+  /* Fallback for browsers without page margin box support */
+  @media print and (not supports(content: counter(page))) {
+    .print-header {
+      display: block !important;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-bottom: 1pt solid #e5e7eb;
+      padding: 8pt;
+      text-align: center;
+      font-weight: 600;
+      z-index: 9999;
+    }
+    
+    .print-footer {
+      display: flex !important;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1pt solid #e5e7eb;
+      padding: 8pt;
+      font-size: 8pt;
+      z-index: 9999;
+    }
+    
+    body {
+      padding-top: 48pt !important;
+      padding-bottom: 48pt !important;
+    }
+  }
+  
+  /* High contrast mode support */
+  @media print and (prefers-contrast: high) {
+    .email-list-item {
+      border: 2pt solid black !important;
+    }
+    
+    .email-list-header {
+      background: black !important;
+      color: white !important;
+      border: 2pt solid black !important;
+    }
+  }
+  
+  /* Ensure consistent font rendering across browsers */
+  * {
+    font-kerning: none !important;
+    text-rendering: optimizeSpeed !important;
+    -webkit-font-smoothing: antialiased !important;
+    -moz-osx-font-smoothing: grayscale !important;
+  }
+  
+  /* Print-specific image handling */
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+    page-break-inside: avoid !important;
+  }
+  
+  /* Ensure proper sizing for different print units */
+  html {
+    font-size: 10pt !important;
+  }
+  
+  /* Override any CSS that might interfere with print */
+  .no-print,
+  [data-no-print],
+  .screen-only {
+    display: none !important;
+  }
+}
