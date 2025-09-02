@@ -3,7 +3,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import session from 'express-session';
-import connectRedis from 'connect-redis';
+import RedisStore from 'connect-redis';
 import { createServer } from 'http';
 import { logger } from './utils/logger';
 import { errorHandler as enhancedErrorHandler, breadcrumbMiddleware } from './middleware/errorMonitoring';
@@ -33,8 +33,6 @@ redisService.connect().catch((err) => {
 
 // Initialize WebSocket service
 webSocketService.initialize(httpServer);
-
-const RedisStore = connectRedis(session);
 
 // Trust proxy for accurate IP addresses in rate limiting
 app.set('trust proxy', 1);
