@@ -12,6 +12,7 @@ interface MonitoredError extends Error {
   severity?: 'low' | 'medium' | 'high' | 'critical';
   fingerprint?: string;
   breadcrumbs?: Breadcrumb[];
+  timestamp?: number;
 }
 
 interface Breadcrumb {
@@ -64,14 +65,14 @@ class ErrorMonitoringService {
   /**
    * Enhanced error handler middleware
    */
-  errorHandler = (err: MonitoredError, req: Request, res: Response, next: NextFunction): void => {
+  errorHandler = (err: MonitoredError, req: Request, res: Response, _next: NextFunction): void => {
     // Generate error fingerprint for deduplication
     err.fingerprint = this.generateErrorFingerprint(err, req);
     err.requestId = this.getRequestId(req);
     err.userId = req.user?.id;
     err.context = this.extractRequestContext(req);
     err.severity = this.determineSeverity(err, req);
-    err.breadcrumbs = this.getBreadcrumbs(err.requestId || req.ip);
+    err.breadcrumbs = this.getBreadcrumbs(err.requestId || req.ip || 'unknown');
 
     // Log error with full context
     this.logError(err, req);
@@ -122,7 +123,7 @@ class ErrorMonitoringService {
   /**
    * Middleware to add breadcrumbs for requests
    */
-  breadcrumbMiddleware = (req: Request, res: Response, next: NextFunction): void => {
+  breadcrumbMiddleware = (_req: Request, _res: Response, next: NextFunction): void => {
     const sessionId = this.getRequestId(req);
     
     // Add request breadcrumb
@@ -162,7 +163,7 @@ class ErrorMonitoringService {
       {
         id: 'critical_error',
         name: 'Critical Error Detected',
-        condition: (metrics, error) => error?.severity === 'critical',
+        condition: (_metrics, error) => error?.severity === 'critical',
         action: 'email',
         cooldown: 5, // 5 minutes
         enabled: true
@@ -211,13 +212,13 @@ class ErrorMonitoringService {
     return crypto.createHash('md5').update(fingerprint).digest('hex');
   }
 
-  private getRequestId(req: Request): string {
+  private getRequestId(_req: Request): string {
     // Try to get existing request ID or generate one
     return req.headers['x-request-id'] as string || 
            `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private extractRequestContext(req: Request): any {
+  private extractRequestContext(_req: Request): any {
     return {
       method: req.method,
       url: req.url,
@@ -493,7 +494,7 @@ class ErrorMonitoringService {
     }
   }
 
-  private sendErrorResponse(error: MonitoredError, req: Request, res: Response): void {
+  private sendErrorResponse(error: MonitoredError, _req: Request, res: Response): void {
     const statusCode = error.statusCode || 500;
     const isDevelopment = process.env.NODE_ENV === 'development';
     
