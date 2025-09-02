@@ -1,0 +1,203 @@
+/* Error Boundary Styles */
+.error-boundary {
+  padding: 20px;
+  margin: 10px 0;
+  border-radius: 8px;
+  background-color: var(--error-bg, #fef2f2);
+  border: 1px solid var(--error-border, #fecaca);
+  color: var(--error-text, #991b1b);
+}
+
+.error-boundary-app {
+  padding: 40px;
+  margin: 20px;
+  text-align: center;
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--error-bg, #fef2f2);
+  border: 2px solid var(--error-border, #fecaca);
+}
+
+.error-boundary-page {
+  padding: 30px;
+  margin: 15px;
+  text-align: center;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--warning-bg, #fffbeb);
+  border: 1px solid var(--warning-border, #fed7aa);
+  color: var(--warning-text, #92400e);
+}
+
+.error-boundary-feature {
+  padding: 20px;
+  margin: 10px 0;
+  text-align: center;
+  background-color: var(--warning-bg, #fffbeb);
+  border: 1px solid var(--warning-border, #fed7aa);
+  color: var(--warning-text, #92400e);
+  border-radius: 6px;
+}
+
+.error-boundary-component {
+  padding: 15px;
+  margin: 8px 0;
+  background-color: var(--info-bg, #f0f9ff);
+  border: 1px solid var(--info-border, #bae6fd);
+  color: var(--info-text, #1e40af);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.error-boundary-display {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.error-boundary-debug {
+  margin-top: 20px;
+  padding: 15px;
+  background-color: var(--bg-secondary, #f8f9fa);
+  border: 1px solid var(--border-color, #e9ecef);
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.error-boundary-debug details {
+  cursor: pointer;
+}
+
+.error-boundary-debug summary {
+  font-weight: 500;
+  margin-bottom: 10px;
+  padding: 5px;
+  background-color: var(--bg-tertiary, #e9ecef);
+  border-radius: 3px;
+}
+
+.error-boundary-debug pre {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 0;
+  padding: 10px;
+  background-color: var(--bg-code, #f8f9fa);
+  border: 1px solid var(--border-light, #dee2e6);
+  border-radius: 3px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.error-boundary-retry-info {
+  margin-top: 15px;
+  padding: 10px;
+  background-color: var(--info-bg-light, #e3f2fd);
+  border: 1px solid var(--info-border-light, #bbdefb);
+  border-radius: 4px;
+  font-size: 14px;
+  text-align: center;
+  color: var(--info-text-dark, #1565c0);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .error-boundary {
+    --error-bg: #2d1b1b;
+    --error-border: #5c2626;
+    --error-text: #fca5a5;
+    --warning-bg: #2d2a1b;
+    --warning-border: #5c5526;
+    --warning-text: #fcd34d;
+    --info-bg: #1b2d3d;
+    --info-border: #2563eb;
+    --info-text: #93c5fd;
+    --bg-secondary: #1f2937;
+    --bg-tertiary: #374151;
+    --bg-code: #111827;
+    --border-color: #4b5563;
+    --border-light: #6b7280;
+    --info-bg-light: #1e3a52;
+    --info-border-light: #3b82f6;
+    --info-text-dark: #60a5fa;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .error-boundary-app {
+    padding: 20px;
+    margin: 10px;
+    min-height: 200px;
+  }
+  
+  .error-boundary-page {
+    padding: 20px;
+    margin: 10px;
+    min-height: 150px;
+  }
+  
+  .error-boundary-feature {
+    padding: 15px;
+    margin: 8px 0;
+  }
+  
+  .error-boundary-component {
+    padding: 12px;
+    margin: 5px 0;
+    font-size: 13px;
+  }
+  
+  .error-boundary-debug pre {
+    font-size: 11px;
+    max-height: 200px;
+  }
+}
+
+/* Animation for error boundary appearance */
+.error-boundary {
+  animation: errorSlideIn 0.3s ease-out;
+}
+
+@keyframes errorSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Focus styles for accessibility */
+.error-boundary:focus-within {
+  outline: 2px solid var(--focus-color, #3b82f6);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .error-boundary {
+    border-width: 2px;
+    font-weight: 500;
+  }
+  
+  .error-boundary-debug pre {
+    border-width: 2px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .error-boundary {
+    animation: none;
+  }
+}

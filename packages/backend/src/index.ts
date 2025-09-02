@@ -1,12 +1,16 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import session from 'express-session';
 import connectRedis from 'connect-redis';
 import { createServer } from 'http';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
+import { errorHandler as enhancedErrorHandler, breadcrumbMiddleware } from './middleware/errorMonitoring';
+import { securityMiddleware } from './middleware/security';
+import { rateLimiters, getRateLimitMetrics } from './middleware/rateLimiting';
+import { getCSRFToken, CSRFConfig } from './middleware/csrf';
 import { redisService } from './services/redis';
 import { webSocketService } from './services/websocket';
 import { syncService } from './services/sync';
@@ -33,16 +37,26 @@ webSocketService.initialize(httpServer);
 
 const RedisStore = connectRedis(session);
 
-// Middleware
-app.use(helmet());
+// Trust proxy for accurate IP addresses in rate limiting
+app.set('trust proxy', 1);
+
+// Security middleware stack (replaces helmet with enhanced security)
+app.use(securityMiddleware);
+
+// CORS configuration
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
-// Session configuration
+// Cookie parser for CSRF tokens
+app.use(cookieParser());
+
+// Body parsing middleware with size limits
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Session configuration with enhanced security
 app.use(
   session({
     store: new RedisStore({ client: redisService.getClient() as any }),
@@ -50,10 +64,11 @@ app.use(
     resave: false,
     saveUninitialized: false,
     name: 'sessionId', // Custom session name
+    rolling: true, // Reset expiration on activity
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      maxAge: 30 * 60 * 1000, // Reduced to 30 minutes for security
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // For OAuth redirects
     },
   })
@@ -63,15 +78,25 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Routes
-app.use('/auth', authRoutes);
-app.use('/api', apiRoutes);
+// Error monitoring breadcrumbs
+app.use(breadcrumbMiddleware);
 
-// Health check
-app.get('/health', async (req, res) => {
+// CSRF protection middleware (use double submit cookie for stateless approach)
+app.use(CSRFConfig.doubleSubmit);
+
+// CSRF token endpoint
+app.get('/api/csrf-token', getCSRFToken);
+
+// Routes with rate limiting
+app.use('/auth', rateLimiters.auth, authRoutes);
+app.use('/api', rateLimiters.api, apiRoutes);
+
+// Health check with rate limiting metrics
+app.get('/health', rateLimiters.public, async (req, res) => {
   const redisHealthy = await redisService.healthCheck();
   const redisStats = await redisService.getStats();
   const webSocketHealth = webSocketService.healthCheck();
+  const rateLimitMetrics = await getRateLimitMetrics();
   
   res.json({ 
     status: 'ok', 
@@ -86,13 +111,16 @@ app.get('/health', async (req, res) => {
         healthy: webSocketHealth.healthy,
         metrics: webSocketHealth.metrics,
         connectedUsers: webSocketHealth.connectedUsers
+      },
+      security: {
+        rateLimiting: rateLimitMetrics
       }
     }
   });
 });
 
-// Error handling
-app.use(errorHandler);
+// Error handling (use enhanced error handler for monitoring)
+app.use(enhancedErrorHandler);
 
 // Set up sync service event handlers for WebSocket integration
 syncService.on('sync:started', (event) => {
