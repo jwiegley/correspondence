@@ -3,11 +3,12 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import session from 'express-session';
-import passport from 'passport';
-import { createClient } from 'redis';
 import connectRedis from 'connect-redis';
 import { logger } from './utils/logger';
 import { errorHandler } from './middleware/errorHandler';
+import { redisService } from './services/redis';
+import './config/passport'; // Import passport configuration
+import passport from 'passport';
 import authRoutes from './routes/auth';
 import apiRoutes from './routes/api';
 
@@ -17,13 +18,10 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// Redis client setup
-const redisClient = createClient({
-  url: process.env.REDIS_URL || 'redis://localhost:6379',
-});
-
-redisClient.connect().catch((err) => {
-  logger.error('Redis connection error:', err);
+// Initialize Redis connection
+redisService.connect().catch((err) => {
+  logger.error('Redis service connection error:', err);
+  process.exit(1);
 });
 
 const RedisStore = connectRedis(session);
@@ -40,14 +38,16 @@ app.use(express.urlencoded({ extended: true }));
 // Session configuration
 app.use(
   session({
-    store: new RedisStore({ client: redisClient as any }),
+    store: new RedisStore({ client: redisService.getClient() as any }),
     secret: process.env.SESSION_SECRET || 'development-secret-change-in-production',
     resave: false,
     saveUninitialized: false,
+    name: 'sessionId', // Custom session name
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000, // 24 hours
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // For OAuth redirects
     },
   })
 );
@@ -61,8 +61,21 @@ app.use('/auth', authRoutes);
 app.use('/api', apiRoutes);
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/health', async (req, res) => {
+  const redisHealthy = await redisService.healthCheck();
+  const redisStats = await redisService.getStats();
+  
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    services: {
+      redis: {
+        healthy: redisHealthy,
+        connected: redisService.isHealthy(),
+        stats: redisStats
+      }
+    }
+  });
 });
 
 // Error handling

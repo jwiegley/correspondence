@@ -6,6 +6,8 @@
   border-bottom: 1px solid var(--color-border);
   transition: background-color 0.2s;
   cursor: pointer;
+  min-height: 72px;
+  box-sizing: border-box;
 }
 
 .email-list-item:hover {

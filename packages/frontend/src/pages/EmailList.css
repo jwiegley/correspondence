@@ -6,6 +6,68 @@
   overflow: hidden;
 }
 
+.email-list-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f8f9fa;
+  border-bottom: 1px solid var(--color-border);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-controls label {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+}
+
+.filter-select {
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+}
+
+.performance-controls {
+  display: flex;
+  align-items: center;
+}
+
+.performance-controls label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.performance-controls input[type="checkbox"] {
+  margin: 0;
+}
+
+.email-count {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
 .email-list-header {
   display: grid;
   grid-template-columns: 200px 1fr 120px 150px;
@@ -16,6 +78,22 @@
   font-weight: 600;
   font-size: 0.875rem;
   color: var(--color-text-secondary);
+}
+
+.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.2s;
+}
+
+.sortable:hover {
+  color: var(--color-primary);
+}
+
+.sortable:focus {
+  outline: none;
+  color: var(--color-primary);
+  text-decoration: underline;
 }
 
 .email-list-body {
@@ -60,13 +138,28 @@
 }
 
 @media print {
+  .email-list-controls,
+  .performance-controls {
+    display: none;
+  }
+  
   .email-list-header {
     position: sticky;
     top: 0;
     background: white;
+    grid-template-columns: 200px 1fr 120px;
   }
   
   .email-col-actions {
     display: none;
+  }
+  
+  .sortable {
+    cursor: default;
+  }
+  
+  @page {
+    size: landscape;
+    margin: 0.5in;
   }
 }
