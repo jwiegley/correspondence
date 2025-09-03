@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { RefreshCw, Mail, Bell, Flag } from 'lucide-react';
+import { RefreshCw, Mail, Bell, Flag, X } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
 
 interface Email {
@@ -62,19 +62,13 @@ function Emails() {
   // Toggle label mutation
   const toggleLabelMutation = useMutation({
     mutationFn: async ({ emailId, label, hasLabel }: { emailId: string; label: string; hasLabel: boolean }) => {
-      console.log(`Toggling label ${label} for email ${emailId}, hasLabel: ${hasLabel}, method: ${hasLabel ? 'DELETE' : 'POST'}`);
       const res = await fetch(`/api/emails/${emailId}/labels`, {
         method: hasLabel ? 'DELETE' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ labelName: label }),  // Changed from 'label' to 'labelName'
+        body: JSON.stringify({ labelName: label }),
       });
-      console.log('Response status:', res.status);
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error('Error response:', errorText);
-        throw new Error('Failed to update label');
-      }
+      if (!res.ok) throw new Error('Failed to update label');
       return res.json();
     },
     onSuccess: () => {
@@ -106,35 +100,22 @@ function Emails() {
 
   const emails = data?.emails || [];
   
-  // Log for debugging
-  console.log('Total emails fetched:', emails.length);
-  if (emails.length > 0) {
-    console.log('Sample email full object:', emails[0]);
-    console.log('Sample labels array:', emails[0].labels);
-    console.log('Unread value:', emails[0].unread, 'Type:', typeof emails[0].unread);
-    
-    // Count emails with various conditions
-    const unreadCount = emails.filter(e => e.unread === true).length;
-    const hasUnreadLabel = emails.filter(e => e.labels && e.labels.includes('UNREAD')).length;
-    console.log('Emails with unread=true:', unreadCount);
-    console.log('Emails with UNREAD label:', hasUnreadLabel);
-    
-    // Show all unique labels
-    const allLabels = new Set();
-    emails.forEach(e => {
-      if (e.labels && Array.isArray(e.labels)) {
-        e.labels.forEach(l => allLabels.add(l));
-      }
-    });
-    console.log('All unique labels found:', Array.from(allLabels));
-  }
-  
   // Filter to show:
-  // 1. Unread messages in inbox
+  // 1. Unread messages in inbox (unless they have Ignore label)
   // 2. Messages with "Action-Item" label (read or unread)
   // 3. Messages with "Active Correspondence" label (read or unread)
   // 4. Messages with "Notify" label (read or unread)
+  // Never show messages with "Ignore" label
   const filteredEmails = emails.filter(email => {
+    // Check for Ignore label - if present, never show
+    const hasIgnore = email.labels && email.labels.some(label => 
+      typeof label === 'string' && (
+        label === 'Ignore' ||
+        label.toLowerCase() === 'ignore'
+      )
+    );
+    if (hasIgnore) return false;
+    
     // Check if UNREAD
     const isUnread = email.labels && email.labels.includes('UNREAD');
     if (isUnread) return true;
@@ -169,8 +150,6 @@ function Emails() {
     
     return hasNotify;
   });
-  
-  console.log('Showing all emails for debugging:', filteredEmails.length);
 
   return (
     <div className="min-h-screen bg-gray-50 print:bg-white">
@@ -249,30 +228,38 @@ function Emails() {
                     l === 'Action-Item' || l === 'Action Item' || 
                     l.toLowerCase() === 'action-item' || l.toLowerCase() === 'action item'
                   );
-                  
-                  // Debug logging for first email
-                  if (index === 0) {
-                    console.log('Email labels:', email.labels);
-                    console.log('Has Notify?', hasNotify);
-                    console.log('Has Action-Item?', hasActionItem);
-                  }
+                  const hasIgnore = email.labels.some(l => 
+                    l === 'Ignore' || l.toLowerCase() === 'ignore'
+                  );
                   const isoDate = new Date(email.date).toISOString().split('T')[0];
                   const truncatedFrom = email.from.length > 20 ? email.from.substring(0, 20) + '...' : email.from;
                   const truncatedSubject = (email.subject || '(No subject)').length > 50 
                     ? (email.subject || '(No subject)').substring(0, 50) + '...' 
                     : (email.subject || '(No subject)');
 
+                  // Determine background color based on labels
+                  let backgroundColor;
+                  if (hasActionItem) {
+                    backgroundColor = '#fee2e2'; // Light red for Action Items
+                  } else if (hasNotify) {
+                    backgroundColor = '#fef3c7'; // Yellow for Notify
+                  } else if (index % 2 === 0) {
+                    backgroundColor = 'white';
+                  } else {
+                    backgroundColor = '#f9fafb';
+                  }
+
                   return (
                     <tr 
                       key={email.id}
                       style={{
-                        backgroundColor: index % 2 === 0 ? 'white' : '#f9fafb',
+                        backgroundColor,
                         borderBottom: '1px solid #e5e7eb',
-                        borderLeft: hasActionItem ? '4px solid #fb923c' : hasNotify ? '4px solid #34d399' : email.unread ? '4px solid #14b8a6' : 'none',
+                        borderLeft: hasActionItem ? '4px solid #dc2626' : hasNotify ? '4px solid #f59e0b' : email.labels && email.labels.includes('UNREAD') ? '4px solid #14b8a6' : 'none',
                         transition: 'background-color 0.15s'
                       }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0fdfa'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#f9fafb'}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = hasActionItem ? '#fecaca' : hasNotify ? '#fde68a' : '#f0fdfa'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = backgroundColor}
                     >
                       <td style={{ padding: '16px 12px', textAlign: 'center', whiteSpace: 'nowrap', fontSize: '16px', color: '#374151', width: '50px' }}>
                         {index + 1}
@@ -361,6 +348,17 @@ function Emails() {
                             title={hasActionItem ? 'Remove Action Item label' : 'Add Action Item label'}
                           >
                             <Flag className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => toggleLabelMutation.mutate({ emailId: email.id, label: 'Ignore', hasLabel: hasIgnore })}
+                            className={`rounded p-1.5 transition-all duration-150 ${
+                              hasIgnore
+                                ? 'bg-red-500 text-white hover:bg-red-600'
+                                : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                            }`}
+                            title={hasIgnore ? 'Remove Ignore label' : 'Add Ignore label'}
+                          >
+                            <X className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </td>

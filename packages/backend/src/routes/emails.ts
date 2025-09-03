@@ -1,4 +1,4 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router, Request, Response } from 'express';
 import { gmail_v1, google } from 'googleapis';
 import { requireAuth } from '../middleware/auth';
 import { logger } from '../utils/logger';
@@ -9,14 +9,6 @@ const router = Router();
 
 // Apply auth middleware to all routes
 router.use(requireAuth);
-
-// Debug route to test label endpoint
-router.all('/:id/labels', (req: Request, res: Response, next: NextFunction) => {
-  logger.info(`Label route hit - Method: ${req.method}, Path: ${req.path}`);
-  logger.info(`Headers:`, req.headers);
-  logger.info(`Body (raw):`, req.body);
-  next();
-});
 
 // Initialize Gmail client
 async function getGmailClient(userId: string): Promise<gmail_v1.Gmail> {
@@ -279,13 +271,9 @@ router.post('/:id/labels', async (req: Request, res: Response) => {
     const user = req.user as any;
     const emailId = req.params.id;
     
-    logger.info(`Request body received:`, JSON.stringify(req.body));
-    logger.info(`Content-Type:`, req.headers['content-type']);
-    
     const { label } = req.body;
     
     if (!label || typeof label !== 'string' || label.trim() === '') {
-      logger.error('Invalid label provided. Label value:', label, 'Type:', typeof label, 'Body:', req.body);
       return res.status(400).json({ error: 'Invalid request body', message: 'labelName must be a non-empty string' });
     }
     
@@ -330,13 +318,9 @@ router.delete('/:id/labels', async (req: Request, res: Response) => {
     const user = req.user as any;
     const emailId = req.params.id;
     
-    logger.info(`DELETE Request body received:`, JSON.stringify(req.body));
-    logger.info(`DELETE Content-Type:`, req.headers['content-type']);
-    
     const { label } = req.body;
     
     if (!label || typeof label !== 'string' || label.trim() === '') {
-      logger.error('DELETE Invalid label provided. Label value:', label, 'Type:', typeof label, 'Body:', req.body);
       return res.status(400).json({ error: 'Invalid request body', message: 'labelName must be a non-empty string' });
     }
     
