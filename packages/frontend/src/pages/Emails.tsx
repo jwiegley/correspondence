@@ -62,13 +62,19 @@ function Emails() {
   // Toggle label mutation
   const toggleLabelMutation = useMutation({
     mutationFn: async ({ emailId, label, hasLabel }: { emailId: string; label: string; hasLabel: boolean }) => {
+      console.log(`Toggling label ${label} for email ${emailId}, hasLabel: ${hasLabel}, method: ${hasLabel ? 'DELETE' : 'POST'}`);
       const res = await fetch(`/api/emails/${emailId}/labels`, {
         method: hasLabel ? 'DELETE' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ label }),
       });
-      if (!res.ok) throw new Error('Failed to update label');
+      console.log('Response status:', res.status);
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error('Error response:', errorText);
+        throw new Error('Failed to update label');
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -297,24 +303,33 @@ function Emails() {
                         </div>
                       </td>
                       <td style={{ padding: '16px 24px', fontSize: '16px' }}>
-                        <div style={{ 
-                          fontSize: '16px',
-                          color: (email.labels && email.labels.includes('UNREAD')) ? '#111827' : '#374151',
-                          fontWeight: (email.labels && email.labels.includes('UNREAD')) ? 'bold' : 'normal'
-                        }}>
+                        <a 
+                          href={`https://mail.google.com/mail/u/0/#inbox/${email.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ 
+                            fontSize: '16px',
+                            color: (email.labels && email.labels.includes('UNREAD')) ? '#111827' : '#374151',
+                            fontWeight: (email.labels && email.labels.includes('UNREAD')) ? 'bold' : 'normal',
+                            textDecoration: 'none',
+                            cursor: 'pointer'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                          onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                        >
                           {truncatedSubject}
-                        </div>
+                        </a>
                       </td>
                       <td style={{ padding: '16px 24px', textAlign: 'center' }}>
                         <div className="flex items-center justify-center gap-1">
                           <button
-                            onClick={() => toggleReadMutation.mutate({ emailId: email.id, unread: false })}
+                            onClick={() => toggleReadMutation.mutate({ emailId: email.id, unread: email.labels && email.labels.includes('UNREAD') })}
                             className={`rounded p-1.5 transition-all duration-150 ${
-                              !email.unread
-                                ? 'bg-blue-500 text-white hover:bg-blue-600'
-                                : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                              email.labels && email.labels.includes('UNREAD')
+                                ? 'bg-gray-200 text-gray-500 hover:bg-gray-300'
+                                : 'bg-blue-500 text-white hover:bg-blue-600'
                             }`}
-                            title="Mark as read"
+                            title={email.labels && email.labels.includes('UNREAD') ? "Mark as read" : "Mark as unread"}
                           >
                             <Mail className="h-3.5 w-3.5" />
                           </button>
