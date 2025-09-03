@@ -67,7 +67,7 @@ function Emails() {
         method: hasLabel ? 'DELETE' : 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ label }),
+        body: JSON.stringify({ labelName: label }),  // Changed from 'label' to 'labelName'
       });
       console.log('Response status:', res.status);
       if (!res.ok) {
