@@ -226,12 +226,16 @@ router.put('/:id/read', async (req: Request, res: Response) => {
 // Helper function to get or create a label
 async function getOrCreateLabel(gmail: gmail_v1.Gmail, labelName: string): Promise<string | null> {
   try {
+    logger.info(`Getting or creating label: ${labelName}`);
+    
     // First, list all labels to see if it exists
     const labelsResponse = await gmail.users.labels.list({
       userId: 'me',
     });
     
     const labels = labelsResponse.data.labels || [];
+    logger.info(`Found ${labels.length} existing labels`);
+    
     const existingLabel = labels.find(l => l.name === labelName);
     
     if (existingLabel) {
@@ -240,7 +244,7 @@ async function getOrCreateLabel(gmail: gmail_v1.Gmail, labelName: string): Promi
     }
     
     // Create the label if it doesn't exist
-    logger.info(`Creating new label: ${labelName}`);
+    logger.info(`Label '${labelName}' not found, creating new label`);
     const createResponse = await gmail.users.labels.create({
       userId: 'me',
       requestBody: {
@@ -250,10 +254,13 @@ async function getOrCreateLabel(gmail: gmail_v1.Gmail, labelName: string): Promi
       },
     });
     
-    logger.info(`Created label: ${labelName} with ID: ${createResponse.data.id}`);
+    logger.info(`Successfully created label: ${labelName} with ID: ${createResponse.data.id}`);
     return createResponse.data.id || null;
-  } catch (error) {
-    logger.error(`Failed to get/create label ${labelName}:`, error);
+  } catch (error: any) {
+    logger.error(`Failed to get/create label ${labelName}:`, error.message);
+    if (error.response) {
+      logger.error('Error response:', error.response.data);
+    }
     return null;
   }
 }
@@ -265,14 +272,21 @@ router.post('/:id/labels', async (req: Request, res: Response) => {
     const { label } = req.body;
     const emailId = req.params.id;
     
-    logger.info(`Adding label ${label} to email ${emailId}`);
+    logger.info(`Adding label ${label} to email ${emailId} for user ${user.id}`);
     
-    const gmail = await getGmailClient(user.id);
+    let gmail;
+    try {
+      gmail = await getGmailClient(user.id);
+    } catch (error) {
+      logger.error(`Failed to create Gmail client for user ${user.id}:`, error);
+      return res.status(500).json({ error: 'Failed to connect to Gmail' });
+    }
     
     // Get or create the label
     const labelId = await getOrCreateLabel(gmail, label);
     
     if (!labelId) {
+      logger.error(`Failed to get/create label: ${label}`);
       throw new Error(`Failed to get/create label: ${label}`);
     }
     
