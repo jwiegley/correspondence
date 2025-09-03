@@ -1,0 +1,166 @@
+@media print {
+  /* Page setup for landscape US Letter */
+  @page {
+    size: 11in 8.5in;
+    margin: 0.5in;
+  }
+
+  /* Hide non-essential UI elements */
+  .print\\:hidden,
+  button,
+  .btn,
+  .user-info,
+  .refresh-button,
+  .action-buttons,
+  nav,
+  header .header-right {
+    display: none !important;
+  }
+
+  /* Body and container adjustments */
+  body {
+    margin: 0;
+    padding: 0;
+    background: white !important;
+    color: black !important;
+  }
+
+  .print\\:bg-white {
+    background: white !important;
+  }
+
+  .print\\:p-0 {
+    padding: 0 !important;
+  }
+
+  .print\\:shadow-none {
+    box-shadow: none !important;
+  }
+
+  .print\\:rounded-none {
+    border-radius: 0 !important;
+  }
+
+  .print\\:space-y-1 > * + * {
+    margin-top: 0.25rem !important;
+  }
+
+  .print\\:p-2 {
+    padding: 0.5rem !important;
+  }
+
+  /* Email list specific */
+  .email-item {
+    page-break-inside: avoid;
+    border: 1px solid #e5e7eb;
+    margin-bottom: 0.25rem;
+  }
+
+  /* Preserve color coding for categories */
+  .bg-orange-50 {
+    background-color: #fff7ed !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .bg-green-50 {
+    background-color: #f0fdf4 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .bg-blue-50 {
+    background-color: #eff6ff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .border-orange-400 {
+    border-left-color: #fb923c !important;
+  }
+
+  .border-green-400 {
+    border-left-color: #4ade80 !important;
+  }
+
+  .border-blue-400 {
+    border-left-color: #60a5fa !important;
+  }
+
+  /* Header for print */
+  .print-header {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+  }
+
+  .print-header h1 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .print-header .print-date {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+
+  /* Footer for print */
+  .print-footer {
+    display: block !important;
+    position: fixed;
+    bottom: 0.5in;
+    left: 0.5in;
+    right: 0.5in;
+    text-align: center;
+    font-size: 0.75rem;
+    color: #6b7280;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 0.5rem;
+  }
+
+  /* Page numbers */
+  .page-number {
+    display: block !important;
+  }
+
+  .page-number:after {
+    content: "Page " counter(page);
+  }
+
+  /* Text adjustments */
+  .font-bold {
+    font-weight: bold !important;
+  }
+
+  .text-gray-600 {
+    color: #4b5563 !important;
+  }
+
+  .text-gray-500 {
+    color: #6b7280 !important;
+  }
+
+  /* Ensure text is readable */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Compact layout for more emails per page */
+  .space-y-2 > * + * {
+    margin-top: 0.25rem !important;
+  }
+
+  /* Remove hover effects */
+  .hover\\:shadow-md:hover {
+    box-shadow: none !important;
+  }
+
+  .transition {
+    transition: none !important;
+  }
+}

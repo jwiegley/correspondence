@@ -1,0 +1,207 @@
+import { Router, Request, Response } from 'express';
+import { gmail_v1, google } from 'googleapis';
+import { requireAuth } from '../middleware/auth';
+import { logger } from '../utils/logger';
+import { redisService } from '../services/redis';
+import { decryptTokens } from '../utils/crypto';
+
+const router = Router();
+
+// Apply auth middleware to all routes
+router.use(requireAuth);
+
+// Initialize Gmail client
+async function getGmailClient(userId: string): Promise<gmail_v1.Gmail> {
+  try {
+    // Get encrypted tokens from Redis
+    const encryptedTokensStr = await redisService.getUserTokens(userId);
+    if (!encryptedTokensStr) {
+      throw new Error('No tokens found for user');
+    }
+
+    const encryptedTokens = JSON.parse(encryptedTokensStr);
+    const tokens = decryptTokens(encryptedTokens);
+
+    // Create OAuth2 client
+    const oauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
+    // Set credentials
+    oauth2Client.setCredentials({
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+    });
+
+    // Return Gmail client
+    return google.gmail({ version: 'v1', auth: oauth2Client });
+  } catch (error) {
+    logger.error('Failed to create Gmail client:', error);
+    throw error;
+  }
+}
+
+// GET /api/emails - Get filtered emails
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const user = req.user as any;
+    
+    // For now return the actual Gmail emails
+    const gmail = await getGmailClient(user.id);
+    
+    // Query for unread emails OR recent emails (for demonstration)
+    // In production, use: 'is:unread OR label:Notify OR label:Action-Item'
+    const response = await gmail.users.messages.list({
+      userId: 'me',
+      q: 'in:inbox newer_than:7d', // Show emails from last 7 days for demonstration
+      maxResults: 20,
+    });
+    
+    const messages = response.data.messages || [];
+    
+    if (messages.length === 0) {
+      return res.json({ emails: [] });
+    }
+    
+    // Get details for each message (limit to 10 for faster response)
+    const emailPromises = messages.slice(0, 10).map(async (message) => {
+      try {
+        const msg = await gmail.users.messages.get({
+          userId: 'me',
+          id: message.id!,
+          format: 'metadata',
+          metadataHeaders: ['From', 'Subject', 'Date'],
+        });
+        
+        const headers = msg.data.payload?.headers || [];
+        const subject = headers.find(h => h.name === 'Subject')?.value || '(No subject)';
+        const from = headers.find(h => h.name === 'From')?.value || 'Unknown';
+        const date = headers.find(h => h.name === 'Date')?.value || '';
+        
+        return {
+          id: message.id,
+          threadId: message.threadId,
+          subject,
+          from,
+          date,
+          snippet: msg.data.snippet || '',
+          unread: msg.data.labelIds?.includes('UNREAD') || false,
+          labels: msg.data.labelIds?.filter(l => ['Notify', 'Action-Item'].includes(l)) || [],
+        };
+      } catch (err) {
+        logger.error(`Error fetching message ${message.id}:`, err);
+        return null;
+      }
+    });
+    
+    const emails = (await Promise.all(emailPromises)).filter(e => e !== null);
+    
+    logger.info(`Successfully fetched ${emails.length} emails`);
+    
+    return res.json({ emails });
+    
+    // Mock data for testing the UI (keeping as comment for reference)
+    /*const mockEmails = [
+      {
+        id: '1',
+        threadId: 't1',
+        subject: 'Weekly Meeting Agenda',
+        from: 'John Doe <john@example.com>',
+        date: new Date(Date.now() - 86400000).toISOString(),
+        snippet: 'Please review the attached agenda for our weekly meeting tomorrow...',
+        unread: true,
+        labels: [],
+      },
+      {
+        id: '2',
+        threadId: 't2',
+        subject: 'Action Required: Budget Approval',
+        from: 'Jane Smith <jane@example.com>',
+        date: new Date(Date.now() - 172800000).toISOString(),
+        snippet: 'The Q4 budget proposal needs your approval by end of week...',
+        unread: false,
+        labels: ['Action-Item'],
+      },
+      {
+        id: '3',
+        threadId: 't3',
+        subject: 'System Maintenance Notification',
+        from: 'IT Department <it@example.com>',
+        date: new Date(Date.now() - 259200000).toISOString(),
+        snippet: 'Scheduled maintenance will occur this weekend from 2 AM to 6 AM...',
+        unread: false,
+        labels: ['Notify'],
+      },
+      {
+        id: '4',
+        threadId: 't4',
+        subject: 'Project Update: Phase 2 Complete',
+        from: 'Project Manager <pm@example.com>',
+        date: new Date(Date.now() - 345600000).toISOString(),
+        snippet: 'I am pleased to announce that Phase 2 of the project is now complete...',
+        unread: true,
+        labels: ['Notify'],
+      },
+      {
+        id: '5',
+        threadId: 't5',
+        subject: 'Urgent: Client Meeting Tomorrow',
+        from: 'Sales Team <sales@example.com>',
+        date: new Date(Date.now() - 3600000).toISOString(),
+        snippet: 'Reminder: Important client meeting scheduled for tomorrow at 10 AM...',
+        unread: true,
+        labels: ['Action-Item'],
+      },
+    ];
+
+    logger.info(`Returning ${mockEmails.length} mock emails for testing`);
+
+    res.json({
+      emails: mockEmails,
+    });*/
+  } catch (error: any) {
+    logger.error('Failed to fetch emails:', error);
+    logger.error('Error details:', error.message, error.stack);
+    res.status(500).json({ error: 'Failed to fetch emails: ' + error.message });
+  }
+});
+
+// PUT /api/emails/:id/read - Toggle read/unread status
+router.put('/:id/read', async (req: Request, res: Response) => {
+  try {
+    // Mock implementation for testing
+    logger.info(`Mock: Toggling read status for email ${req.params.id}`);
+    res.json({ success: true });
+  } catch (error: any) {
+    logger.error('Failed to update read status:', error);
+    res.status(500).json({ error: 'Failed to update read status' });
+  }
+});
+
+// POST /api/emails/:id/labels - Add label to email
+router.post('/:id/labels', async (req: Request, res: Response) => {
+  try {
+    // Mock implementation for testing
+    logger.info(`Mock: Adding label ${req.body.label} to email ${req.params.id}`);
+    res.json({ success: true });
+  } catch (error: any) {
+    logger.error('Failed to add label:', error);
+    res.status(500).json({ error: 'Failed to add label' });
+  }
+});
+
+// DELETE /api/emails/:id/labels - Remove label from email
+router.delete('/:id/labels', async (req: Request, res: Response) => {
+  try {
+    // Mock implementation for testing
+    logger.info(`Mock: Removing label ${req.body.label} from email ${req.params.id}`);
+    res.json({ success: true });
+  } catch (error: any) {
+    logger.error('Failed to remove label:', error);
+    res.status(500).json({ error: 'Failed to remove label' });
+  }
+});
+
+export default router;

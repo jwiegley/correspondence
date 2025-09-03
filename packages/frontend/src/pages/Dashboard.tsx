@@ -1,4 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -50,12 +51,12 @@ export default function Dashboard() {
         </div>
 
         <div className="features-grid">
-          <div className="feature-card">
+          <Link to="/emails" className="feature-card feature-card-active">
             <div className="feature-icon">📧</div>
             <h3>Email Management</h3>
             <p>View, organize, and manage your Gmail messages with enhanced features.</p>
-            <div className="feature-status">Coming Soon</div>
-          </div>
+            <div className="feature-status feature-status-active">Open</div>
+          </Link>
 
           <div className="feature-card">
             <div className="feature-icon">🏷️</div>

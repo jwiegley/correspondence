@@ -6,6 +6,7 @@ import EmailList from './pages/EmailList';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AuthError from './pages/AuthError';
+import Emails from './pages/Emails';
 import Layout from './components/Layout';
 
 // Create a client
@@ -76,9 +77,7 @@ function AppRoutes() {
         path="/emails"
         element={
           <ProtectedRoute>
-            <Layout>
-              <EmailList />
-            </Layout>
+            <Emails />
           </ProtectedRoute>
         }
       />

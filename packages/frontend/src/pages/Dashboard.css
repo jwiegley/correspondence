@@ -130,11 +130,23 @@
   border: 1px solid #e5e7eb;
   text-align: center;
   transition: all 0.2s;
+  text-decoration: none;
+  color: inherit;
+  display: block;
 }
 
 .feature-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
+}
+
+.feature-card-active {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+}
+
+.feature-card-active:hover {
+  border-color: #2563eb;
 }
 
 .feature-icon {
@@ -163,6 +175,11 @@
   font-size: 0.75rem;
   font-weight: 500;
   display: inline-block;
+}
+
+.feature-status-active {
+  background: #10b981;
+  color: white;
 }
 
 .auth-status {

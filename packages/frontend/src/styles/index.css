@@ -1,3 +1,6 @@
+/* Import print styles */
+@import './print.css';
+
 * {
   margin: 0;
   padding: 0;

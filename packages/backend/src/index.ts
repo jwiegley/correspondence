@@ -21,6 +21,7 @@ import './config/passport'; // Import passport configuration
 import passport from 'passport';
 import authRoutes from './routes/auth';
 import apiRoutes from './routes/api';
+import emailsRoutes from './routes/emails';
 
 const app = express();
 const httpServer = createServer(app);
@@ -89,6 +90,7 @@ app.use(breadcrumbMiddleware);
 // Routes with rate limiting
 app.use('/auth', rateLimiters.auth, authRoutes);
 app.use('/api', rateLimiters.api, apiRoutes);
+app.use('/api/emails', rateLimiters.api, emailsRoutes);
 
 // Health check with rate limiting metrics
 app.get('/health', rateLimiters.public, async (_req, res) => {
