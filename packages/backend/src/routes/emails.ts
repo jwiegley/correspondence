@@ -269,13 +269,15 @@ async function getOrCreateLabel(gmail: gmail_v1.Gmail, labelName: string): Promi
 router.post('/:id/labels', async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
-    const { label } = req.body;
     const emailId = req.params.id;
     
-    logger.info(`Request body:`, req.body);
+    logger.info(`Request body received:`, JSON.stringify(req.body));
+    logger.info(`Content-Type:`, req.headers['content-type']);
+    
+    const { label } = req.body;
     
     if (!label || typeof label !== 'string' || label.trim() === '') {
-      logger.error('Invalid label provided:', label);
+      logger.error('Invalid label provided. Label value:', label, 'Type:', typeof label, 'Body:', req.body);
       return res.status(400).json({ error: 'Invalid request body', message: 'labelName must be a non-empty string' });
     }
     
@@ -318,11 +320,15 @@ router.post('/:id/labels', async (req: Request, res: Response) => {
 router.delete('/:id/labels', async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
-    const { label } = req.body;
     const emailId = req.params.id;
     
+    logger.info(`DELETE Request body received:`, JSON.stringify(req.body));
+    logger.info(`DELETE Content-Type:`, req.headers['content-type']);
+    
+    const { label } = req.body;
+    
     if (!label || typeof label !== 'string' || label.trim() === '') {
-      logger.error('Invalid label provided:', label);
+      logger.error('DELETE Invalid label provided. Label value:', label, 'Type:', typeof label, 'Body:', req.body);
       return res.status(400).json({ error: 'Invalid request body', message: 'labelName must be a non-empty string' });
     }
     
