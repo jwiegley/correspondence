@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { gmail_v1, google } from 'googleapis';
 import { requireAuth } from '../middleware/auth';
 import { logger } from '../utils/logger';
@@ -9,6 +9,14 @@ const router = Router();
 
 // Apply auth middleware to all routes
 router.use(requireAuth);
+
+// Debug route to test label endpoint
+router.all('/:id/labels', (req: Request, res: Response, next: NextFunction) => {
+  logger.info(`Label route hit - Method: ${req.method}, Path: ${req.path}`);
+  logger.info(`Headers:`, req.headers);
+  logger.info(`Body (raw):`, req.body);
+  next();
+});
 
 // Initialize Gmail client
 async function getGmailClient(userId: string): Promise<gmail_v1.Gmail> {
