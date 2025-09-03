@@ -71,6 +71,34 @@ function Emails() {
         if (!res.ok) throw new Error('Failed to remove label');
         return res.json();
       } else {
+        // When adding a label, check if we need to remove the opposite label first
+        const currentEmails = queryClient.getQueryData<{ emails: Email[] }>(['emails']);
+        const currentEmail = currentEmails?.emails.find(e => e.id === emailId);
+        
+        // Handle mutual exclusivity between Action-Item and Notify
+        let labelToRemove: string | null = null;
+        if (label === 'Action-Item' || label === 'Action Item') {
+          // Check if Notify label exists
+          if (currentEmail?.labels.includes('Notify')) {
+            labelToRemove = 'Notify';
+          }
+        } else if (label === 'Notify') {
+          // Check if Action Item label exists (either format)
+          if (currentEmail?.labels.includes('Action-Item')) {
+            labelToRemove = 'Action-Item';
+          } else if (currentEmail?.labels.includes('Action Item')) {
+            labelToRemove = 'Action Item';
+          }
+        }
+        
+        // Remove opposite label if needed
+        if (labelToRemove) {
+          await fetch(`/api/emails/${emailId}/labels/${encodeURIComponent(labelToRemove)}`, {
+            method: 'DELETE',
+            credentials: 'include',
+          });
+        }
+        
         // POST request - label name goes in body
         const res = await fetch(`/api/emails/${emailId}/labels`, {
           method: 'POST',
@@ -93,9 +121,28 @@ function Emails() {
       if (previousEmails) {
         const updatedEmails = previousEmails.emails.map(email => {
           if (email.id === emailId) {
-            const updatedLabels = hasLabel
-              ? email.labels.filter(l => l !== label)
-              : [...email.labels, label];
+            let updatedLabels = email.labels;
+            
+            if (hasLabel) {
+              // Remove the label
+              updatedLabels = email.labels.filter(l => l !== label);
+            } else {
+              // Add the label and handle mutual exclusivity
+              updatedLabels = [...email.labels];
+              
+              // Handle mutual exclusivity between Action-Item and Notify
+              if (label === 'Action-Item' || label === 'Action Item') {
+                // Remove Notify if it exists
+                updatedLabels = updatedLabels.filter(l => l !== 'Notify');
+              } else if (label === 'Notify') {
+                // Remove Action-Item (both formats) if it exists
+                updatedLabels = updatedLabels.filter(l => l !== 'Action-Item' && l !== 'Action Item');
+              }
+              
+              // Add the new label
+              updatedLabels.push(label);
+            }
+            
             return { ...email, labels: updatedLabels };
           }
           return email;
