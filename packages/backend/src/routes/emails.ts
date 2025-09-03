@@ -325,23 +325,26 @@ router.post('/:id/labels', async (req: Request, res: Response) => {
     });
     
     logger.info(`Successfully added label '${label}' (ID: ${labelId}) to email ${emailId}`);
-    res.json({ success: true });
+    res.json({ 
+      success: true,
+      labelName: label,
+      labelId: labelId 
+    });
   } catch (error: any) {
     logger.error('Failed to add label:', error);
     res.status(500).json({ error: 'Failed to add label' });
   }
 });
 
-// DELETE /api/emails/:id/labels - Remove label from email
-router.delete('/:id/labels', async (req: Request, res: Response) => {
+// DELETE /api/emails/:id/labels/:labelName - Remove label from email
+router.delete('/:id/labels/:labelName', async (req: Request, res: Response) => {
   try {
     const user = req.user as any;
     const emailId = req.params.id;
+    const label = decodeURIComponent(req.params.labelName);
     
-    const { label } = req.body;
-    
-    if (!label || typeof label !== 'string' || label.trim() === '') {
-      return res.status(400).json({ error: 'Invalid request body', message: 'labelName must be a non-empty string' });
+    if (!label || label.trim() === '') {
+      return res.status(400).json({ error: 'Invalid label name' });
     }
     
     logger.info(`Removing label ${label} from email ${emailId}`);

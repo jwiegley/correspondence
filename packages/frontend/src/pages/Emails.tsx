@@ -82,17 +82,44 @@ function Emails() {
         return res.json();
       }
     },
+    onMutate: async ({ emailId, label, hasLabel }) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['emails'] });
+      
+      // Snapshot the previous value
+      const previousEmails = queryClient.getQueryData<{ emails: Email[] }>(['emails']);
+      
+      // Optimistically update the cache
+      if (previousEmails) {
+        const updatedEmails = previousEmails.emails.map(email => {
+          if (email.id === emailId) {
+            const updatedLabels = hasLabel
+              ? email.labels.filter(l => l !== label)
+              : [...email.labels, label];
+            return { ...email, labels: updatedLabels };
+          }
+          return email;
+        });
+        
+        queryClient.setQueryData(['emails'], { emails: updatedEmails });
+      }
+      
+      return { previousEmails };
+    },
+    onError: (err, variables, context) => {
+      // If the mutation fails, use the context returned from onMutate to roll back
+      if (context?.previousEmails) {
+        queryClient.setQueryData(['emails'], context.previousEmails);
+      }
+      showError('Failed to update label');
+    },
     onSuccess: (data, variables) => {
-      // Force immediate refetch to update the list
+      // Force immediate refetch to get the real data from server
       queryClient.invalidateQueries({ queryKey: ['emails'] });
-      queryClient.refetchQueries({ queryKey: ['emails'] });
       
       // Show success message with label info
       const action = variables.hasLabel ? 'Removed' : 'Added';
       showSuccess(`${action} ${variables.label} label`);
-    },
-    onError: () => {
-      showError('Failed to update label');
     },
   });
 
@@ -115,6 +142,12 @@ function Emails() {
   }
 
   const emails = data?.emails || [];
+  
+  // Debug: Log first few emails to see their labels
+  if (emails.length > 0) {
+    console.log('First email labels:', emails[0].labels);
+    if (emails.length > 1) console.log('Second email labels:', emails[1].labels);
+  }
   
   // Filter to show:
   // 1. Unread messages in inbox (unless they have Ignore label)
