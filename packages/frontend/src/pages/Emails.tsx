@@ -99,24 +99,87 @@ function Emails() {
   }
 
   const emails = data?.emails || [];
-  // For demonstration, show all recent emails
-  // In production, filter by: email.unread || email.labels.includes('Notify') || email.labels.includes('Action-Item')
-  const filteredEmails = emails;
+  
+  // Log for debugging
+  console.log('Total emails fetched:', emails.length);
+  if (emails.length > 0) {
+    console.log('Sample email full object:', emails[0]);
+    console.log('Sample labels array:', emails[0].labels);
+    console.log('Unread value:', emails[0].unread, 'Type:', typeof emails[0].unread);
+    
+    // Count emails with various conditions
+    const unreadCount = emails.filter(e => e.unread === true).length;
+    const hasUnreadLabel = emails.filter(e => e.labels && e.labels.includes('UNREAD')).length;
+    console.log('Emails with unread=true:', unreadCount);
+    console.log('Emails with UNREAD label:', hasUnreadLabel);
+    
+    // Show all unique labels
+    const allLabels = new Set();
+    emails.forEach(e => {
+      if (e.labels && Array.isArray(e.labels)) {
+        e.labels.forEach(l => allLabels.add(l));
+      }
+    });
+    console.log('All unique labels found:', Array.from(allLabels));
+  }
+  
+  // Filter to show:
+  // 1. Unread messages in inbox
+  // 2. Messages with "Action-Item" label (read or unread)
+  // 3. Messages with "Active Correspondence" label (read or unread)
+  // 4. Messages with "Notify" label (read or unread)
+  const filteredEmails = emails.filter(email => {
+    // Check if UNREAD
+    const isUnread = email.labels && email.labels.includes('UNREAD');
+    if (isUnread) return true;
+    
+    // Check for Action-Item label
+    const hasActionItem = email.labels && email.labels.some(label => 
+      typeof label === 'string' && (
+        label === 'Action-Item' ||
+        label === 'Action Item' ||
+        label.toLowerCase() === 'action-item' ||
+        label.toLowerCase() === 'action item'
+      )
+    );
+    if (hasActionItem) return true;
+    
+    // Check for Active Correspondence label
+    const hasActiveCorrespondence = email.labels && email.labels.some(label => 
+      typeof label === 'string' && (
+        label === 'Active Correspondence' ||
+        label.toLowerCase() === 'active correspondence'
+      )
+    );
+    if (hasActiveCorrespondence) return true;
+    
+    // Check for Notify label
+    const hasNotify = email.labels && email.labels.some(label => 
+      typeof label === 'string' && (
+        label === 'Notify' ||
+        label.toLowerCase() === 'notify'
+      )
+    );
+    
+    return hasNotify;
+  });
+  
+  console.log('Showing all emails for debugging:', filteredEmails.length);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 print:bg-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 print:p-0">
-        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
+    <div className="min-h-screen bg-gray-50 print:bg-white">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 print:p-0">
+        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Inbox Manager</h1>
-            <p className="mt-1 text-sm text-gray-500">Monitor and manage important emails</p>
+            <h1 className="text-2xl font-semibold text-gray-900">Email Dashboard</h1>
+            <p className="mt-1 text-sm text-gray-600">Manage your inbox and labels</p>
           </div>
           <button
             onClick={handleRefresh}
-            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-blue-600 to-blue-700 px-5 py-2.5 text-white font-medium hover:from-blue-700 hover:to-blue-800 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm text-white font-medium hover:bg-teal-700 transition-colors shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={isLoading}
           >
-            <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
         </div>
@@ -150,28 +213,36 @@ function Emails() {
             </div>
           </div>
         ) : (
-          <div className="overflow-hidden rounded-xl shadow-lg border border-gray-200">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gradient-to-r from-gray-50 to-gray-100">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                    Date
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ background: 'linear-gradient(90deg, #14b8a6 0%, #0d9488 100%)' }}>
+                  <th style={{ padding: '16px 24px', textAlign: 'left', color: 'white', fontWeight: '600', fontSize: '16px' }}>
+                    Rank
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th style={{ padding: '16px 24px', textAlign: 'left', color: 'white', fontWeight: '600', fontSize: '16px' }}>
+                    Date  
+                  </th>
+                  <th style={{ padding: '16px 24px', textAlign: 'left', color: 'white', fontWeight: '600', fontSize: '16px' }}>
                     From
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  <th style={{ padding: '16px 24px', textAlign: 'left', color: 'white', fontWeight: '600', fontSize: '16px' }}>
                     Subject
                   </th>
-                  <th className="px-6 py-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider print:hidden">
+                  <th style={{ padding: '16px 24px', textAlign: 'center', color: 'white', fontWeight: '600', fontSize: '16px' }}>
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-100">
-                {filteredEmails.map((email) => {
-                  const hasNotify = email.labels.includes('Notify');
-                  const hasActionItem = email.labels.includes('Action-Item');
+              <tbody>
+                {filteredEmails.map((email, index) => {
+                  const hasNotify = email.labels.some(l => 
+                    l === 'Notify' || l.toLowerCase() === 'notify'
+                  );
+                  const hasActionItem = email.labels.some(l => 
+                    l === 'Action-Item' || l === 'Action Item' || 
+                    l.toLowerCase() === 'action-item' || l.toLowerCase() === 'action item'
+                  );
                   const isoDate = new Date(email.date).toISOString().split('T')[0];
                   const truncatedFrom = email.from.length > 20 ? email.from.substring(0, 20) + '...' : email.from;
                   const truncatedSubject = (email.subject || '(No subject)').length > 50 
@@ -181,66 +252,93 @@ function Emails() {
                   return (
                     <tr 
                       key={email.id}
-                      className={`hover:bg-gray-50 transition-colors ${
-                        hasActionItem ? 'bg-orange-50 border-l-4 border-orange-400' :
-                        hasNotify ? 'bg-green-50 border-l-4 border-green-400' :
-                        email.unread ? 'bg-blue-50 border-l-4 border-blue-400' : ''
-                      }`}
+                      style={{
+                        backgroundColor: index % 2 === 0 ? 'white' : '#f9fafb',
+                        borderBottom: '1px solid #e5e7eb',
+                        borderLeft: hasActionItem ? '4px solid #fb923c' : hasNotify ? '4px solid #34d399' : email.unread ? '4px solid #14b8a6' : 'none',
+                        transition: 'background-color 0.15s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0fdfa'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#f9fafb'}
                     >
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                      <td style={{ padding: '16px 24px', whiteSpace: 'nowrap', fontSize: '16px', color: '#374151' }}>
+                        {index + 1}
+                      </td>
+                      <td style={{ 
+                        padding: '16px 24px', 
+                        whiteSpace: 'nowrap', 
+                        fontSize: '16px', 
+                        color: '#374151',
+                        fontWeight: (email.labels && email.labels.includes('UNREAD')) ? 'bold' : 'normal'
+                      }}>
                         {isoDate}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <span className={`text-sm ${email.unread ? 'font-semibold text-gray-900' : 'text-gray-600'}`}>
+                      <td style={{ padding: '16px 24px', whiteSpace: 'nowrap', fontSize: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ 
+                            fontSize: '16px',
+                            color: (email.labels && email.labels.includes('UNREAD')) ? '#111827' : '#374151',
+                            fontWeight: (email.labels && email.labels.includes('UNREAD')) ? 'bold' : 'normal'
+                          }}>
                             {truncatedFrom}
                           </span>
-                          {email.unread && (
-                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              New
+                          {email.labels && email.labels.includes('UNREAD') && (
+                            <span style={{
+                              padding: '2px 8px',
+                              borderRadius: '9999px',
+                              fontSize: '11px',
+                              fontWeight: '500',
+                              backgroundColor: '#99f6e4',
+                              color: '#0f766e'
+                            }}>
+                              NEW
                             </span>
                           )}
                         </div>
                       </td>
-                      <td className="px-6 py-4">
-                        <div className={`text-sm ${email.unread ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                      <td style={{ padding: '16px 24px', fontSize: '16px' }}>
+                        <div style={{ 
+                          fontSize: '16px',
+                          color: (email.labels && email.labels.includes('UNREAD')) ? '#111827' : '#374151',
+                          fontWeight: (email.labels && email.labels.includes('UNREAD')) ? 'bold' : 'normal'
+                        }}>
                           {truncatedSubject}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-center print:hidden">
-                        <div className="flex items-center justify-center gap-2">
+                      <td style={{ padding: '16px 24px', textAlign: 'center' }}>
+                        <div className="flex items-center justify-center gap-1">
                           <button
-                            onClick={() => toggleReadMutation.mutate({ emailId: email.id, unread: email.unread })}
-                            className={`group relative rounded-lg p-2 transition-all duration-200 transform hover:scale-105 ${
-                              email.unread
-                                ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md hover:shadow-lg hover:from-blue-600 hover:to-blue-700'
-                                : 'bg-white border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 hover:shadow-md'
+                            onClick={() => toggleReadMutation.mutate({ emailId: email.id, unread: false })}
+                            className={`rounded p-1.5 transition-all duration-150 ${
+                              !email.unread
+                                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                                : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
                             }`}
-                            title={email.unread ? 'Mark as read' : 'Mark as unread'}
+                            title="Mark as read"
                           >
-                            <Mail className="h-4 w-4" />
+                            <Mail className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => toggleLabelMutation.mutate({ emailId: email.id, label: 'Notify', hasLabel: hasNotify })}
-                            className={`group relative rounded-lg p-2 transition-all duration-200 transform hover:scale-105 ${
+                            className={`rounded p-1.5 transition-all duration-150 ${
                               hasNotify
-                                ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-md hover:shadow-lg hover:from-emerald-600 hover:to-green-700'
-                                : 'bg-white border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 hover:shadow-md'
+                                ? 'bg-green-500 text-white hover:bg-green-600'
+                                : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
                             }`}
                             title={hasNotify ? 'Remove Notify label' : 'Add Notify label'}
                           >
-                            <Bell className="h-4 w-4" />
+                            <Bell className="h-3.5 w-3.5" />
                           </button>
                           <button
                             onClick={() => toggleLabelMutation.mutate({ emailId: email.id, label: 'Action-Item', hasLabel: hasActionItem })}
-                            className={`group relative rounded-lg p-2 transition-all duration-200 transform hover:scale-105 ${
+                            className={`rounded p-1.5 transition-all duration-150 ${
                               hasActionItem
-                                ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white shadow-md hover:shadow-lg hover:from-orange-600 hover:to-red-600'
-                                : 'bg-white border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 hover:shadow-md'
+                                ? 'bg-orange-500 text-white hover:bg-orange-600'
+                                : 'bg-gray-200 text-gray-500 hover:bg-gray-300'
                             }`}
                             title={hasActionItem ? 'Remove Action Item label' : 'Add Action Item label'}
                           >
-                            <Flag className="h-4 w-4" />
+                            <Flag className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       </td>

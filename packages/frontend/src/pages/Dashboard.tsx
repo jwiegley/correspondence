@@ -18,7 +18,7 @@ export default function Dashboard() {
       <header className="dashboard-header">
         <div className="header-content">
           <div className="header-left">
-            <h1>Correspondence</h1>
+            <h1>Assembly Correspondence Manager</h1>
             <span className="beta-badge">Beta</span>
           </div>
           <div className="header-right">
@@ -46,7 +46,7 @@ export default function Dashboard() {
 
       <main className="dashboard-main">
         <div className="welcome-section">
-          <h2>Welcome to Correspondence</h2>
+          <h2>Welcome to Assembly Correspondence Manager</h2>
           <p>Your secure Gmail management interface is ready.</p>
         </div>
 

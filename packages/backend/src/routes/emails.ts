@@ -51,12 +51,23 @@ router.get('/', async (req: Request, res: Response) => {
     // For now return the actual Gmail emails
     const gmail = await getGmailClient(user.id);
     
-    // Query for unread emails OR recent emails (for demonstration)
-    // In production, use: 'is:unread OR label:Notify OR label:Action-Item'
+    // First, get all labels to map IDs to names
+    const labelsResponse = await gmail.users.labels.list({
+      userId: 'me',
+    });
+    const labelMap = new Map<string, string>();
+    (labelsResponse.data.labels || []).forEach(label => {
+      if (label.id && label.name) {
+        labelMap.set(label.id, label.name);
+      }
+    });
+    
+    // Query for unread emails in inbox OR emails with specific labels
+    // Note: Gmail labels need to be exact matches - check if labels exist
     const response = await gmail.users.messages.list({
       userId: 'me',
-      q: 'in:inbox newer_than:7d', // Show emails from last 7 days for demonstration
-      maxResults: 20,
+      q: 'in:inbox', // Get all inbox emails, we'll filter client-side
+      maxResults: 500,
     });
     
     const messages = response.data.messages || [];
@@ -65,8 +76,8 @@ router.get('/', async (req: Request, res: Response) => {
       return res.json({ emails: [] });
     }
     
-    // Get details for each message (limit to 10 for faster response)
-    const emailPromises = messages.slice(0, 10).map(async (message) => {
+    // Get details for each message (process up to 100 for reasonable performance)
+    const emailPromises = messages.slice(0, 100).map(async (message) => {
       try {
         const msg = await gmail.users.messages.get({
           userId: 'me',
@@ -80,6 +91,9 @@ router.get('/', async (req: Request, res: Response) => {
         const from = headers.find(h => h.name === 'From')?.value || 'Unknown';
         const date = headers.find(h => h.name === 'Date')?.value || '';
         
+        // Map label IDs to names
+        const labelNames = (msg.data.labelIds || []).map(id => labelMap.get(id) || id);
+        
         return {
           id: message.id,
           threadId: message.threadId,
@@ -88,7 +102,8 @@ router.get('/', async (req: Request, res: Response) => {
           date,
           snippet: msg.data.snippet || '',
           unread: msg.data.labelIds?.includes('UNREAD') || false,
-          labels: msg.data.labelIds?.filter(l => ['Notify', 'Action-Item'].includes(l)) || [],
+          labels: labelNames, // Return label names instead of IDs
+          labelIds: msg.data.labelIds || [], // Also return raw IDs for debugging
         };
       } catch (err) {
         logger.error(`Error fetching message ${message.id}:`, err);
@@ -171,8 +186,36 @@ router.get('/', async (req: Request, res: Response) => {
 // PUT /api/emails/:id/read - Toggle read/unread status
 router.put('/:id/read', async (req: Request, res: Response) => {
   try {
-    // Mock implementation for testing
-    logger.info(`Mock: Toggling read status for email ${req.params.id}`);
+    const user = req.user as any;
+    const emailId = req.params.id;
+    const { unread } = req.body; // false = mark as read, true = mark as unread
+    
+    const gmail = await getGmailClient(user.id);
+    
+    // To mark as read: remove UNREAD label
+    // To mark as unread: add UNREAD label
+    if (unread === false) {
+      // Mark as read - remove UNREAD label
+      await gmail.users.messages.modify({
+        userId: 'me',
+        id: emailId,
+        requestBody: {
+          removeLabelIds: ['UNREAD'],
+        }
+      });
+      logger.info(`Marked email ${emailId} as read`);
+    } else {
+      // Mark as unread - add UNREAD label
+      await gmail.users.messages.modify({
+        userId: 'me',
+        id: emailId,
+        requestBody: {
+          addLabelIds: ['UNREAD'],
+        }
+      });
+      logger.info(`Marked email ${emailId} as unread`);
+    }
+    
     res.json({ success: true });
   } catch (error: any) {
     logger.error('Failed to update read status:', error);
@@ -180,11 +223,69 @@ router.put('/:id/read', async (req: Request, res: Response) => {
   }
 });
 
+// Helper function to get or create a label
+async function getOrCreateLabel(gmail: gmail_v1.Gmail, labelName: string): Promise<string | null> {
+  try {
+    // First, list all labels to see if it exists
+    const labelsResponse = await gmail.users.labels.list({
+      userId: 'me',
+    });
+    
+    const labels = labelsResponse.data.labels || [];
+    const existingLabel = labels.find(l => l.name === labelName);
+    
+    if (existingLabel) {
+      logger.info(`Found existing label: ${labelName} with ID: ${existingLabel.id}`);
+      return existingLabel.id || null;
+    }
+    
+    // Create the label if it doesn't exist
+    logger.info(`Creating new label: ${labelName}`);
+    const createResponse = await gmail.users.labels.create({
+      userId: 'me',
+      requestBody: {
+        name: labelName,
+        labelListVisibility: 'labelShow',
+        messageListVisibility: 'show',
+      },
+    });
+    
+    logger.info(`Created label: ${labelName} with ID: ${createResponse.data.id}`);
+    return createResponse.data.id || null;
+  } catch (error) {
+    logger.error(`Failed to get/create label ${labelName}:`, error);
+    return null;
+  }
+}
+
 // POST /api/emails/:id/labels - Add label to email
 router.post('/:id/labels', async (req: Request, res: Response) => {
   try {
-    // Mock implementation for testing
-    logger.info(`Mock: Adding label ${req.body.label} to email ${req.params.id}`);
+    const user = req.user as any;
+    const { label } = req.body;
+    const emailId = req.params.id;
+    
+    logger.info(`Adding label ${label} to email ${emailId}`);
+    
+    const gmail = await getGmailClient(user.id);
+    
+    // Get or create the label
+    const labelId = await getOrCreateLabel(gmail, label);
+    
+    if (!labelId) {
+      throw new Error(`Failed to get/create label: ${label}`);
+    }
+    
+    // Add the label to the email
+    await gmail.users.messages.modify({
+      userId: 'me',
+      id: emailId,
+      requestBody: {
+        addLabelIds: [labelId],
+      }
+    });
+    
+    logger.info(`Successfully added label '${label}' (ID: ${labelId}) to email ${emailId}`);
     res.json({ success: true });
   } catch (error: any) {
     logger.error('Failed to add label:', error);
@@ -195,8 +296,38 @@ router.post('/:id/labels', async (req: Request, res: Response) => {
 // DELETE /api/emails/:id/labels - Remove label from email
 router.delete('/:id/labels', async (req: Request, res: Response) => {
   try {
-    // Mock implementation for testing
-    logger.info(`Mock: Removing label ${req.body.label} from email ${req.params.id}`);
+    const user = req.user as any;
+    const { label } = req.body;
+    const emailId = req.params.id;
+    
+    logger.info(`Removing label ${label} from email ${emailId}`);
+    
+    const gmail = await getGmailClient(user.id);
+    
+    // Get the label ID
+    const labelsResponse = await gmail.users.labels.list({
+      userId: 'me',
+    });
+    
+    const labels = labelsResponse.data.labels || [];
+    const existingLabel = labels.find(l => l.name === label);
+    
+    if (!existingLabel || !existingLabel.id) {
+      logger.warn(`Label '${label}' not found, cannot remove`);
+      res.json({ success: true, note: 'Label not found' });
+      return;
+    }
+    
+    // Remove the label from the email
+    await gmail.users.messages.modify({
+      userId: 'me',
+      id: emailId,
+      requestBody: {
+        removeLabelIds: [existingLabel.id],
+      }
+    });
+    
+    logger.info(`Successfully removed label '${label}' (ID: ${existingLabel.id}) from email ${emailId}`);
     res.json({ success: true });
   } catch (error: any) {
     logger.error('Failed to remove label:', error);

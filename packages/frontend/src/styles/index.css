@@ -191,7 +191,7 @@ body {
   /* Page Headers and Footers */
   @page {
     @top-center {
-      content: "Gmail Correspondence Manager";
+      content: "Assembly Correspondence Manager";
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       font-size: 12pt;
       font-weight: 600;
