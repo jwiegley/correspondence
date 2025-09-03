@@ -223,8 +223,8 @@ function Emails() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: 'linear-gradient(90deg, #14b8a6 0%, #0d9488 100%)' }}>
-                  <th style={{ padding: '16px 24px', textAlign: 'left', color: 'white', fontWeight: '600', fontSize: '16px' }}>
-                    Rank
+                  <th style={{ padding: '16px 12px', textAlign: 'center', color: 'white', fontWeight: '600', fontSize: '16px', width: '50px' }}>
+                    #
                   </th>
                   <th style={{ padding: '16px 24px', textAlign: 'left', color: 'white', fontWeight: '600', fontSize: '16px' }}>
                     Date  
@@ -249,6 +249,13 @@ function Emails() {
                     l === 'Action-Item' || l === 'Action Item' || 
                     l.toLowerCase() === 'action-item' || l.toLowerCase() === 'action item'
                   );
+                  
+                  // Debug logging for first email
+                  if (index === 0) {
+                    console.log('Email labels:', email.labels);
+                    console.log('Has Notify?', hasNotify);
+                    console.log('Has Action-Item?', hasActionItem);
+                  }
                   const isoDate = new Date(email.date).toISOString().split('T')[0];
                   const truncatedFrom = email.from.length > 20 ? email.from.substring(0, 20) + '...' : email.from;
                   const truncatedSubject = (email.subject || '(No subject)').length > 50 
@@ -267,7 +274,7 @@ function Emails() {
                       onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f0fdfa'}
                       onMouseLeave={(e) => e.currentTarget.style.backgroundColor = index % 2 === 0 ? 'white' : '#f9fafb'}
                     >
-                      <td style={{ padding: '16px 24px', whiteSpace: 'nowrap', fontSize: '16px', color: '#374151' }}>
+                      <td style={{ padding: '16px 12px', textAlign: 'center', whiteSpace: 'nowrap', fontSize: '16px', color: '#374151', width: '50px' }}>
                         {index + 1}
                       </td>
                       <td style={{ 
