@@ -91,8 +91,14 @@ router.get('/', async (req: Request, res: Response) => {
         const from = headers.find(h => h.name === 'From')?.value || 'Unknown';
         const date = headers.find(h => h.name === 'Date')?.value || '';
         
-        // Map label IDs to names
-        const labelNames = (msg.data.labelIds || []).map(id => labelMap.get(id) || id);
+        // Map label IDs to names, filtering out system labels we don't need
+        const labelNames = (msg.data.labelIds || [])
+          .map(id => labelMap.get(id) || id)
+          .filter(label => {
+            // Keep custom labels and UNREAD, filter out other system labels for cleaner display
+            const systemLabels = ['INBOX', 'SENT', 'DRAFT', 'SPAM', 'TRASH', 'STARRED', 'IMPORTANT'];
+            return !systemLabels.includes(label) || label === 'UNREAD';
+          });
         
         return {
           id: message.id,
@@ -112,6 +118,20 @@ router.get('/', async (req: Request, res: Response) => {
     });
     
     const emails = (await Promise.all(emailPromises)).filter(e => e !== null);
+    
+    // Log custom labels found
+    const customLabels = new Set();
+    emails.forEach(email => {
+      email.labels.forEach(label => {
+        if (label !== 'UNREAD' && !['CATEGORY_UPDATES', 'CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'CATEGORY_PERSONAL', 'CATEGORY_FORUMS'].includes(label)) {
+          customLabels.add(label);
+        }
+      });
+    });
+    
+    if (customLabels.size > 0) {
+      logger.info(`Custom labels found: ${Array.from(customLabels).join(', ')}`);
+    }
     
     logger.info(`Successfully fetched ${emails.length} emails`);
     

@@ -62,18 +62,34 @@ function Emails() {
   // Toggle label mutation
   const toggleLabelMutation = useMutation({
     mutationFn: async ({ emailId, label, hasLabel }: { emailId: string; label: string; hasLabel: boolean }) => {
-      const res = await fetch(`/api/emails/${emailId}/labels`, {
-        method: hasLabel ? 'DELETE' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ labelName: label }),
-      });
-      if (!res.ok) throw new Error('Failed to update label');
-      return res.json();
+      if (hasLabel) {
+        // DELETE request - label name goes in URL
+        const res = await fetch(`/api/emails/${emailId}/labels/${encodeURIComponent(label)}`, {
+          method: 'DELETE',
+          credentials: 'include',
+        });
+        if (!res.ok) throw new Error('Failed to remove label');
+        return res.json();
+      } else {
+        // POST request - label name goes in body
+        const res = await fetch(`/api/emails/${emailId}/labels`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ labelName: label }),
+        });
+        if (!res.ok) throw new Error('Failed to add label');
+        return res.json();
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      // Force immediate refetch to update the list
       queryClient.invalidateQueries({ queryKey: ['emails'] });
-      showSuccess('Label updated');
+      queryClient.refetchQueries({ queryKey: ['emails'] });
+      
+      // Show success message with label info
+      const action = variables.hasLabel ? 'Removed' : 'Added';
+      showSuccess(`${action} ${variables.label} label`);
     },
     onError: () => {
       showError('Failed to update label');
