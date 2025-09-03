@@ -493,6 +493,15 @@ class GmailService {
       };
     }
 
+    // Fetch all labels to map IDs to names
+    const labels = await this.listLabels(userId);
+    const labelMap = new Map<string, string>();
+    labels.forEach(label => {
+      if (label.id) {
+        labelMap.set(label.id, label.name || label.id);
+      }
+    });
+
     return await this.executeWithRetry(
       async () => {
         const queries = this.buildQueries(request);
@@ -546,7 +555,7 @@ class GmailService {
         logger.info(`Found ${uniqueMessageIds.length} unique messages for user ${userId}`);
 
         // Fetch full message details
-        const emails = await this.fetchMessageDetails(userId, uniqueMessageIds);
+        const emails = await this.fetchMessageDetails(userId, uniqueMessageIds, labelMap);
 
         // Apply additional filtering if needed
         const filteredEmails = this.applyFilters(emails, request?.filter);
@@ -658,7 +667,7 @@ class GmailService {
   /**
    * Fetch full message details for a list of message IDs
    */
-  private async fetchMessageDetails(userId: string, messageIds: string[]): Promise<Email[]> {
+  private async fetchMessageDetails(userId: string, messageIds: string[], labelMap?: Map<string, string>): Promise<Email[]> {
     if (messageIds.length === 0) {
       return [];
     }
@@ -677,7 +686,7 @@ class GmailService {
             format: 'full', // Get full message including body
           });
 
-          return this.parseGmailMessage(response.data);
+          return this.parseGmailMessage(response.data, labelMap);
         } catch (error) {
           logger.warn(`Error fetching message ${messageId} for user ${userId}:`, error);
           return null;
@@ -701,7 +710,7 @@ class GmailService {
   /**
    * Parse Gmail message format into application's Email interface
    */
-  private parseGmailMessage(message: gmail_v1.Schema$Message): Email | null {
+  private parseGmailMessage(message: gmail_v1.Schema$Message, labelMap?: Map<string, string>): Email | null {
     try {
       if (!message.id || !message.payload) {
         return null;
@@ -721,8 +730,13 @@ class GmailService {
       const body = this.extractEmailBody(message.payload);
       
       // Get labels
-      const labels = message.labelIds || [];
-      const isUnread = labels.includes('UNREAD');
+      const labelIds = message.labelIds || [];
+      const isUnread = labelIds.includes('UNREAD');
+      
+      // Map label IDs to names if we have a label map
+      const labels = labelMap 
+        ? labelIds.map(id => labelMap.get(id) || id)
+        : labelIds;
 
       // Parse attachments if any
       const attachments = this.extractAttachments(message.payload);
@@ -738,7 +752,7 @@ class GmailService {
         snippet: message.snippet || '',
         body,
         labels: labels,
-        labelIds: labels,
+        labelIds: labelIds,
         isUnread,
         attachments: attachments.length > 0 ? attachments : undefined,
       };
@@ -959,18 +973,78 @@ class GmailService {
       async () => {
         // Get all labels to find the label ID
         const labels = await this.listLabels(userId);
-        const label = labels.find(l => l.name === labelName);
+        
+        // First try exact match
+        let label = labels.find(l => l.name === labelName);
+        
+        // If not found, try case-insensitive match
+        if (!label) {
+          label = labels.find(l => l.name.toLowerCase() === labelName.toLowerCase());
+        }
+        
+        // If still not found, try with space/hyphen variations
+        if (!label) {
+          const variations = [
+            labelName.replace(/-/g, ' '),  // Replace hyphens with spaces
+            labelName.replace(/ /g, '-'),  // Replace spaces with hyphens
+            labelName.replace(/-/g, ''),   // Remove hyphens
+            labelName.replace(/ /g, ''),   // Remove spaces
+          ];
+          
+          for (const variation of variations) {
+            label = labels.find(l => l.name.toLowerCase() === variation.toLowerCase());
+            if (label) break;
+          }
+        }
 
         if (!label) {
           // Try to create the label if it doesn't exist (for user labels)
           if (this.isValidCustomLabelName(labelName)) {
-            const createdLabel = await this.createLabel(userId, labelName);
-            if (createdLabel) {
-              await this.modifyMessageLabels(userId, messageId, add ? [createdLabel.id] : [], add ? [] : [createdLabel.id]);
-              return;
+            try {
+              const createdLabel = await this.createLabel(userId, labelName);
+              if (createdLabel) {
+                await this.modifyMessageLabels(userId, messageId, add ? [createdLabel.id] : [], add ? [] : [createdLabel.id]);
+                return;
+              }
+            } catch (createError: any) {
+              // If creation failed due to conflict, try to find the label again with variations
+              if (createError.message?.includes('exists') || createError.message?.includes('conflict')) {
+                logger.warn(`Label creation failed due to conflict, attempting to find existing label with variations`);
+                
+                // Clear the label cache and retry
+                const labelCacheKey = `gmail:${userId}:labels`;
+                await redisService.deleteTemp(labelCacheKey);
+                
+                // Get fresh labels
+                const freshLabels = await this.listLabels(userId);
+                
+                // Try all variations again with fresh labels
+                const variations = [
+                  labelName,
+                  labelName.replace(/-/g, ' '),
+                  labelName.replace(/ /g, '-'),
+                  labelName.replace(/-/g, ''),
+                  labelName.replace(/ /g, ''),
+                ];
+                
+                for (const variation of variations) {
+                  label = freshLabels.find(l => l.name.toLowerCase() === variation.toLowerCase());
+                  if (label) {
+                    logger.info(`Found existing label "${label.name}" as variation of "${labelName}"`);
+                    break;
+                  }
+                }
+                
+                if (!label) {
+                  throw new Error(`Label "${labelName}" exists but could not be found with any variation`);
+                }
+              } else {
+                throw createError;
+              }
             }
+          } else {
+            throw new Error(`Label "${labelName}" not found and could not be created`);
           }
-          throw new Error(`Label "${labelName}" not found and could not be created`);
         }
 
         await this.modifyMessageLabels(
@@ -980,7 +1054,7 @@ class GmailService {
           add ? [] : [label.id]
         );
 
-        logger.debug(`${add ? 'Added' : 'Removed'} label "${labelName}" ${add ? 'to' : 'from'} message ${messageId} for user ${userId}`);
+        logger.debug(`${add ? 'Added' : 'Removed'} label "${label.name}" ${add ? 'to' : 'from'} message ${messageId} for user ${userId}`);
       },
       'toggleLabel',
       userId

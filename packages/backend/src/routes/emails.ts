@@ -56,11 +56,22 @@ router.get('/', async (req: Request, res: Response) => {
       userId: 'me',
     });
     const labelMap = new Map<string, string>();
+    const customLabels: Array<{id: string, name: string}> = [];
+    
     (labelsResponse.data.labels || []).forEach(label => {
       if (label.id && label.name) {
         labelMap.set(label.id, label.name);
+        // Track custom labels for debugging
+        if (label.id?.startsWith('Label_')) {
+          customLabels.push({ id: label.id, name: label.name });
+        }
       }
     });
+    
+    // Log all custom labels found
+    if (customLabels.length > 0) {
+      logger.info(`Found ${customLabels.length} custom labels:`, customLabels);
+    }
     
     // Query for unread emails in inbox OR emails with specific labels
     // Note: Gmail labels need to be exact matches - check if labels exist
@@ -119,18 +130,18 @@ router.get('/', async (req: Request, res: Response) => {
     
     const emails = (await Promise.all(emailPromises)).filter(e => e !== null);
     
-    // Log custom labels found
-    const customLabels = new Set();
+    // Log custom labels found in emails
+    const customLabelsInEmails = new Set();
     emails.forEach(email => {
       email.labels.forEach(label => {
         if (label !== 'UNREAD' && !['CATEGORY_UPDATES', 'CATEGORY_PROMOTIONS', 'CATEGORY_SOCIAL', 'CATEGORY_PERSONAL', 'CATEGORY_FORUMS'].includes(label)) {
-          customLabels.add(label);
+          customLabelsInEmails.add(label);
         }
       });
     });
     
-    if (customLabels.size > 0) {
-      logger.info(`Custom labels found: ${Array.from(customLabels).join(', ')}`);
+    if (customLabelsInEmails.size > 0) {
+      logger.info(`Custom labels found in emails: ${Array.from(customLabelsInEmails).join(', ')}`);
     }
     
     logger.info(`Successfully fetched ${emails.length} emails`);
@@ -291,13 +302,13 @@ router.post('/:id/labels', async (req: Request, res: Response) => {
     const user = req.user as any;
     const emailId = req.params.id;
     
-    const { label } = req.body;
+    const { labelName } = req.body;
     
-    if (!label || typeof label !== 'string' || label.trim() === '') {
+    if (!labelName || typeof labelName !== 'string' || labelName.trim() === '') {
       return res.status(400).json({ error: 'Invalid request body', message: 'labelName must be a non-empty string' });
     }
     
-    logger.info(`Adding label ${label} to email ${emailId} for user ${user.id}`);
+    logger.info(`Adding label ${labelName} to email ${emailId} for user ${user.id}`);
     
     let gmail;
     try {
@@ -308,11 +319,11 @@ router.post('/:id/labels', async (req: Request, res: Response) => {
     }
     
     // Get or create the label
-    const labelId = await getOrCreateLabel(gmail, label);
+    const labelId = await getOrCreateLabel(gmail, labelName);
     
     if (!labelId) {
-      logger.error(`Failed to get/create label: ${label}`);
-      throw new Error(`Failed to get/create label: ${label}`);
+      logger.error(`Failed to get/create label: ${labelName}`);
+      throw new Error(`Failed to get/create label: ${labelName}`);
     }
     
     // Add the label to the email
@@ -324,10 +335,10 @@ router.post('/:id/labels', async (req: Request, res: Response) => {
       }
     });
     
-    logger.info(`Successfully added label '${label}' (ID: ${labelId}) to email ${emailId}`);
+    logger.info(`Successfully added label '${labelName}' (ID: ${labelId}) to email ${emailId}`);
     res.json({ 
       success: true,
-      labelName: label,
+      labelName: labelName,
       labelId: labelId 
     });
   } catch (error: any) {

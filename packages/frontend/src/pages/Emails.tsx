@@ -143,6 +143,36 @@ function Emails() {
 
   const emails = data?.emails || [];
   
+  // Known label ID mappings from previous sessions
+  // These are hardcoded based on observed IDs - ideally should come from backend
+  const labelIdMap: Record<string, string> = {
+    'Label_83': 'Notify',
+    'Label_84': 'Ignore',
+    'Label_85': 'Action-Item',
+    'Label_86': 'Active Correspondence'
+  };
+  
+  // Create normalized emails with proper label names
+  const normalizedEmails = emails.map(email => ({
+    ...email,
+    labels: email.labels.map(label => labelIdMap[label] || label)
+  }));
+
+  // Helper to check if email has specific label (checks both name and known IDs)
+  const hasLabel = (email: Email, labelName: string): boolean => {
+    // Direct label name match
+    if (email.labels.includes(labelName)) return true;
+    
+    // Check if any of the email's labels match known IDs for this label name
+    for (const [id, name] of Object.entries(labelIdMap)) {
+      if (name === labelName && email.labels.includes(id)) {
+        return true;
+      }
+    }
+    
+    return false;
+  };
+  
   // Debug: Log first few emails to see their labels
   if (emails.length > 0) {
     console.log('First email labels:', emails[0].labels);
@@ -155,49 +185,22 @@ function Emails() {
   // 3. Messages with "Active Correspondence" label (read or unread)
   // 4. Messages with "Notify" label (read or unread)
   // Never show messages with "Ignore" label
-  const filteredEmails = emails.filter(email => {
+  const filteredEmails = normalizedEmails.filter(email => {
     // Check for Ignore label - if present, never show
-    const hasIgnore = email.labels && email.labels.some(label => 
-      typeof label === 'string' && (
-        label === 'Ignore' ||
-        label.toLowerCase() === 'ignore'
-      )
-    );
-    if (hasIgnore) return false;
+    if (email.labels.includes('Ignore')) return false;
     
     // Check if UNREAD
     const isUnread = email.labels && email.labels.includes('UNREAD');
     if (isUnread) return true;
     
-    // Check for Action-Item label
-    const hasActionItem = email.labels && email.labels.some(label => 
-      typeof label === 'string' && (
-        label === 'Action-Item' ||
-        label === 'Action Item' ||
-        label.toLowerCase() === 'action-item' ||
-        label.toLowerCase() === 'action item'
-      )
-    );
-    if (hasActionItem) return true;
+    // Check for Action-Item label (both hyphenated and space versions)
+    if (email.labels.includes('Action-Item') || email.labels.includes('Action Item')) return true;
     
     // Check for Active Correspondence label
-    const hasActiveCorrespondence = email.labels && email.labels.some(label => 
-      typeof label === 'string' && (
-        label === 'Active Correspondence' ||
-        label.toLowerCase() === 'active correspondence'
-      )
-    );
-    if (hasActiveCorrespondence) return true;
+    if (email.labels.includes('Active Correspondence')) return true;
     
     // Check for Notify label
-    const hasNotify = email.labels && email.labels.some(label => 
-      typeof label === 'string' && (
-        label === 'Notify' ||
-        label.toLowerCase() === 'notify'
-      )
-    );
-    
-    return hasNotify;
+    return email.labels.includes('Notify');
   });
 
   return (
@@ -210,11 +213,11 @@ function Emails() {
           </div>
           <button
             onClick={handleRefresh}
-            className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm text-white font-medium hover:bg-teal-700 transition-colors shadow-sm hover:shadow disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-600 px-6 py-3 text-sm text-white font-semibold hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
             disabled={isLoading}
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
+            <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : 'transition-transform hover:rotate-180 duration-500'}`} />
+            <span>{isLoading ? 'Refreshing...' : 'Refresh Emails'}</span>
           </button>
         </div>
 
@@ -270,17 +273,13 @@ function Emails() {
               </thead>
               <tbody>
                 {filteredEmails.map((email, index) => {
-                  const hasNotify = email.labels.some(l => 
-                    l === 'Notify' || l.toLowerCase() === 'notify'
-                  );
-                  const hasActionItem = email.labels.some(l => 
-                    l === 'Action-Item' || l === 'Action Item' || 
-                    l.toLowerCase() === 'action-item' || l.toLowerCase() === 'action item'
-                  );
-                  const hasIgnore = email.labels.some(l => 
-                    l === 'Ignore' || l.toLowerCase() === 'ignore'
-                  );
-                  const isoDate = new Date(email.date).toISOString().split('T')[0];
+                  const hasNotify = email.labels.includes('Notify');
+                  const hasActionItem = email.labels.includes('Action-Item') || email.labels.includes('Action Item');
+                  const hasIgnore = email.labels.includes('Ignore');
+                  const emailDate = new Date(email.date);
+                  const isoDatePart = emailDate.toISOString().split('T')[0];
+                  const dayOfWeek = emailDate.toLocaleDateString('en-US', { weekday: 'short' });
+                  const isoDate = `${isoDatePart} ${dayOfWeek}`;
                   const truncatedFrom = email.from.length > 20 ? email.from.substring(0, 20) + '...' : email.from;
                   const truncatedSubject = (email.subject || '(No subject)').length > 50 
                     ? (email.subject || '(No subject)').substring(0, 50) + '...' 
