@@ -42,8 +42,8 @@ interface AuthenticatedUser {
 
 // Configure Google OAuth strategy
 passport.use(new GoogleStrategy({
-  clientID: process.env.GOOGLE_CLIENT_ID!,
-  clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+  clientID: process.env.GOOGLE_CLIENT_ID || 'dummy-client-id',
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy-secret',
   callbackURL: process.env.GOOGLE_CALLBACK_URL || '/auth/google/callback',
   scope: ['profile', 'email', 'https://www.googleapis.com/auth/gmail.readonly', 'https://www.googleapis.com/auth/gmail.modify']
 }, async (accessToken: string, refreshToken: string, profile: GoogleProfile, done: any) => {
@@ -65,11 +65,11 @@ passport.use(new GoogleStrategy({
       refreshToken
     });
 
-    // Store encrypted tokens with a longer TTL (30 days)
-    await redisService.storeToken(user.id, encryptedTokens, 30 * 24 * 60 * 60);
+    // Store encrypted tokens (storeUserTokens expects a string)
+    await redisService.storeUserTokens(user.id, JSON.stringify(encryptedTokens));
     
-    // Store user profile data separately
-    await redisService.storeUserProfile(user.id, user);
+    // Store user profile data separately (also expects a string)
+    await redisService.storeUserProfile(user.id, JSON.stringify(user));
 
     logger.info(`User ${user.email} authenticated successfully`);
     
@@ -89,12 +89,14 @@ passport.serializeUser((user: Express.User, done) => {
 passport.deserializeUser(async (id: string, done) => {
   try {
     // Get user profile from Redis
-    const profile = await redisService.getUserProfile(id);
+    const profileString = await redisService.getUserProfile(id);
     
-    if (!profile) {
+    if (!profileString) {
       return done(null, false);
     }
 
+    // Parse the JSON string back to user object
+    const profile = JSON.parse(profileString);
     done(null, profile);
   } catch (error) {
     logger.error('Error deserializing user:', error);

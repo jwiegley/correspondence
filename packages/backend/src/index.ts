@@ -2,6 +2,10 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
+
+// Load environment variables FIRST before any other imports that might use them
+dotenv.config();
+
 import session from 'express-session';
 import RedisStore from 'connect-redis';
 import { createServer } from 'http';
@@ -17,9 +21,6 @@ import './config/passport'; // Import passport configuration
 import passport from 'passport';
 import authRoutes from './routes/auth';
 import apiRoutes from './routes/api';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);

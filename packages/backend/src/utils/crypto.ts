@@ -55,8 +55,7 @@ export function encryptTokens(tokenData: TokenData): EncryptedTokens {
     const iv = crypto.randomBytes(IV_LENGTH);
     const salt = crypto.randomBytes(SALT_LENGTH);
     
-    const cipher = crypto.createCipher(ALGORITHM, key);
-    cipher.setAutoPadding(true);
+    const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
     
     // Serialize the token data
     const plaintext = JSON.stringify({
@@ -106,7 +105,7 @@ export function decryptTokens(encryptedTokens: EncryptedTokens): TokenData {
     const tag = combined.subarray(TAG_POSITION, ENCRYPTED_POSITION);
     const encrypted = combined.subarray(ENCRYPTED_POSITION);
     
-    const decipher = crypto.createDecipher(ALGORITHM, key);
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
     decipher.setAuthTag(tag);
     
     // Decrypt the data

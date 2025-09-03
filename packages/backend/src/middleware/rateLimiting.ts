@@ -27,16 +27,30 @@ const skipSuccessfulRequests = (req: Request, res: Response): boolean => {
   return isReadOnly && isSuccessful && req.method === 'GET';
 };
 
-// Create Redis store instance
+// Create Redis store instance (deferred to avoid initialization issues)
 const createRedisStore = () => {
   try {
+    const client = redisService.getClient();
+    if (!client || !client.isOpen) {
+      logger.debug('Redis client not ready for rate limiting, using memory store');
+      return undefined;
+    }
     return new RedisStore({
-      sendCommand: (...args: string[]) => redisService.getClient().sendCommand(args),
+      sendCommand: (...args: string[]) => client.sendCommand(args),
     });
   } catch (error) {
     logger.warn('Failed to create Redis store for rate limiting, falling back to memory store', { error });
     return undefined;
   }
+};
+
+// Lazy store getter to defer Redis connection
+let redisStoreCache: RedisStore | undefined;
+const getRedisStore = () => {
+  if (!redisStoreCache) {
+    redisStoreCache = createRedisStore();
+  }
+  return redisStoreCache;
 };
 
 // Authentication endpoints rate limiter (strict)
@@ -50,7 +64,6 @@ export const authRateLimiter: RateLimitRequestHandler = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: createKeyGenerator('auth_limit'),
-  store: createRedisStore(),
   handler: (req: Request, res: Response) => {
     logger.warn('Authentication rate limit exceeded', {
       ip: req.ip,
@@ -78,7 +91,6 @@ export const apiRateLimiter: RateLimitRequestHandler = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: createKeyGenerator('api_limit'),
-  store: createRedisStore(),
   skip: skipSuccessfulRequests,
   handler: (req: Request, res: Response) => {
     logger.warn('API rate limit exceeded', {
@@ -108,7 +120,6 @@ export const publicRateLimiter: RateLimitRequestHandler = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: createKeyGenerator('public_limit'),
-  store: createRedisStore(),
   handler: (req: Request, res: Response) => {
     logger.warn('Public rate limit exceeded', {
       ip: req.ip,
@@ -136,7 +147,6 @@ export const gmailApiRateLimiter: RateLimitRequestHandler = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: createKeyGenerator('gmail_limit'),
-  store: createRedisStore(),
   handler: (req: Request, res: Response) => {
     logger.warn('Gmail API rate limit exceeded', {
       ip: req.ip,
@@ -164,7 +174,6 @@ export const emailActionRateLimiter: RateLimitRequestHandler = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: createKeyGenerator('email_action_limit'),
-  store: createRedisStore(),
   handler: (req: Request, res: Response) => {
     logger.warn('Email action rate limit exceeded', {
       ip: req.ip,

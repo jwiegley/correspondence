@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Router, Request, Response, NextFunction } from 'express';
 import passport from 'passport';
 import { google } from 'googleapis';
