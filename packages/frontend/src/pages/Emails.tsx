@@ -200,10 +200,23 @@ function Emails() {
   };
   
   // Create normalized emails with proper label names
-  const normalizedEmails = emails.map(email => ({
-    ...email,
-    labels: email.labels.map(label => labelIdMap[label] || label)
-  }));
+  const normalizedEmails = emails.map((email, idx) => {
+    const normalized = {
+      ...email,
+      labels: email.labels.map(label => labelIdMap[label] || label)
+    };
+    
+    // Debug the normalization for the second email
+    if (idx === 1) {
+      console.log('Normalizing second email:', {
+        original: email.labels,
+        normalized: normalized.labels,
+        id: email.id
+      });
+    }
+    
+    return normalized;
+  });
 
   // Helper to check if email has specific label (checks both name and known IDs)
   const hasLabel = (email: Email, labelName: string): boolean => {
@@ -222,8 +235,8 @@ function Emails() {
   
   // Debug: Log first few emails to see their labels
   if (emails.length > 0) {
-    console.log('First email labels:', emails[0].labels);
-    if (emails.length > 1) console.log('Second email labels:', emails[1].labels);
+    console.log('Raw first email labels:', emails[0].labels);
+    if (emails.length > 1) console.log('Raw second email labels:', emails[1].labels);
   }
   
   // Filter to show:
@@ -250,22 +263,67 @@ function Emails() {
     return email.labels.includes('Notify');
   });
 
+  // Debug filtered emails
+  if (filteredEmails.length > 1) {
+    console.log('Filtered emails - first two:', {
+      first: { id: filteredEmails[0].id, labels: filteredEmails[0].labels },
+      second: { id: filteredEmails[1].id, labels: filteredEmails[1].labels }
+    });
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 print:bg-white">
+    <div className="min-h-screen bg-gray-50 print:bg-white" style={{ padding: '20px' }}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6 print:p-0">
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Email Dashboard</h1>
-            <p className="mt-1 text-sm text-gray-600">Manage your inbox and labels</p>
+        <div className="mb-12 print:hidden">
+          <div style={{ position: 'relative' }}>
+            <button
+              onClick={handleRefresh}
+              disabled={isLoading}
+              style={{
+                position: 'absolute',
+                top: '0',
+                right: '0',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '10px',
+                padding: '12px 24px',
+                borderRadius: '12px',
+                background: 'linear-gradient(135deg, #14b8a6 0%, #0891b2 100%)',
+                color: 'white',
+                border: 'none',
+                fontSize: '15px',
+                fontWeight: '600',
+                cursor: isLoading ? 'not-allowed' : 'pointer',
+                boxShadow: '0 4px 14px 0 rgba(20, 184, 166, 0.39)',
+                transition: 'all 0.3s ease',
+                opacity: isLoading ? 0.7 : 1,
+                transform: 'translateY(0)',
+                zIndex: 10,
+              }}
+              onMouseEnter={(e) => {
+                if (!isLoading) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px 0 rgba(20, 184, 166, 0.5)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 4px 14px 0 rgba(20, 184, 166, 0.39)';
+              }}
+            >
+              <RefreshCw 
+                className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`}
+                style={{
+                  transition: 'transform 0.5s ease',
+                }}
+              />
+              <span>{isLoading ? 'Refreshing...' : 'Refresh Emails'}</span>
+            </button>
+            <div>
+              <h1 className="text-2xl font-semibold text-gray-900">Email Dashboard</h1>
+              <p className="mt-1 text-sm text-gray-600">Manage your inbox and labels</p>
+            </div>
           </div>
-          <button
-            onClick={handleRefresh}
-            className="inline-flex items-center gap-2.5 rounded-full bg-gradient-to-r from-teal-500 to-cyan-600 px-6 py-3 text-sm text-white font-semibold hover:from-teal-600 hover:to-cyan-700 transition-all duration-200 shadow-lg hover:shadow-xl hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
-            disabled={isLoading}
-          >
-            <RefreshCw className={`h-5 w-5 ${isLoading ? 'animate-spin' : 'transition-transform hover:rotate-180 duration-500'}`} />
-            <span>{isLoading ? 'Refreshing...' : 'Refresh Emails'}</span>
-          </button>
         </div>
 
         {isLoading && filteredEmails.length === 0 ? (
@@ -297,7 +355,7 @@ function Emails() {
             </div>
           </div>
         ) : (
-          <div style={{ backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
+          <div style={{ backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 10px 40px rgba(0,0,0,0.1)', marginTop: '20px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: 'linear-gradient(90deg, #14b8a6 0%, #0d9488 100%)' }}>
@@ -323,6 +381,23 @@ function Emails() {
                   const hasNotify = email.labels.includes('Notify');
                   const hasActionItem = email.labels.includes('Action-Item') || email.labels.includes('Action Item');
                   const hasIgnore = email.labels.includes('Ignore');
+                  
+                  // Debug logging for the second email
+                  if (index === 1) {
+                    console.log('Second email full data:', email);
+                    console.log('Label detection:', {
+                      id: email.id,
+                      rawLabels: email.labels,
+                      labelsLength: email.labels.length,
+                      labelsJSON: JSON.stringify(email.labels),
+                      hasNotify,
+                      hasActionItem,
+                      hasIgnore,
+                      includesNotify: email.labels.includes('Notify'),
+                      includesActionItem: email.labels.includes('Action-Item'),
+                      includesActionItem2: email.labels.includes('Action Item')
+                    });
+                  }
                   const emailDate = new Date(email.date);
                   const isoDatePart = emailDate.toISOString().split('T')[0];
                   const dayOfWeek = emailDate.toLocaleDateString('en-US', { weekday: 'short' });
