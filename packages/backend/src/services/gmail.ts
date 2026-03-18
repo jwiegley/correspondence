@@ -2,7 +2,7 @@ import { gmail_v1, google } from 'googleapis';
 import { logger } from '../utils/logger';
 import { tokenRefreshService } from './tokenRefresh';
 import { redisService } from './redis';
-import { Email, EmailLabel, EmailFilter, EmailListRequest, EmailListResponse, EmailUpdate } from '../../../shared/src/types/email';
+import { Email, EmailLabel, EmailFilter, EmailListRequest, EmailListResponse, EmailUpdate } from '@correspondence/shared';
 
 // Custom error classes for Gmail API operations
 export class GmailError extends Error {
@@ -71,7 +71,7 @@ export class GmailValidationError extends GmailError {
   }
 }
 
-interface TokenData {
+interface _TokenData {
   accessToken: string;
   refreshToken?: string;
   tokenType: string;
@@ -212,7 +212,7 @@ class GmailService {
   /**
    * Convert generic errors to specific Gmail error types
    */
-  private handleGmailError(error: any, operationName: string, userId: string): GmailError {
+  private handleGmailError(error: any, _operationName: string, _userId: string): GmailError {
     // Handle Google API errors
     if (error.response?.status || error.code) {
       const statusCode = error.response?.status || error.code;
@@ -238,11 +238,12 @@ class GmailService {
         case 404:
           return new GmailNotFoundError(message);
         
-        case 429:
-          const retryAfter = error.response?.headers['retry-after'] 
-            ? parseInt(error.response.headers['retry-after']) 
+        case 429: {
+          const retryAfter = error.response?.headers['retry-after']
+            ? parseInt(error.response.headers['retry-after'])
             : undefined;
           return new GmailRateLimitError(message, retryAfter);
+        }
         
         case 500:
         case 502:
@@ -590,8 +591,6 @@ class GmailService {
       queries.push('label:Action-Item');
     } else {
       const filter = request.filter;
-      let query = '';
-
       // Build query parts
       const queryParts: string[] = [];
 
@@ -637,7 +636,7 @@ class GmailService {
    * Generate cache key based on request parameters
    */
   private generateCacheKey(userId: string, request?: EmailListRequest): string {
-    let keyParts = [`gmail:${userId}:emails`];
+    const keyParts = [`gmail:${userId}:emails`];
     
     if (!request?.filter) {
       keyParts.push('default');
@@ -776,14 +775,14 @@ class GmailService {
   private extractEmailBody(payload: gmail_v1.Schema$MessagePart): string {
     try {
       // Try to find HTML part first
-      let htmlPart = this.findPartByMimeType(payload, 'text/html');
+      const htmlPart = this.findPartByMimeType(payload, 'text/html');
       if (htmlPart && htmlPart.body?.data) {
         const htmlBody = Buffer.from(htmlPart.body.data, 'base64').toString('utf-8');
         return this.htmlToText(htmlBody);
       }
 
       // Fall back to plain text
-      let textPart = this.findPartByMimeType(payload, 'text/plain');
+      const textPart = this.findPartByMimeType(payload, 'text/plain');
       if (textPart && textPart.body?.data) {
         return Buffer.from(textPart.body.data, 'base64').toString('utf-8');
       }
@@ -870,7 +869,7 @@ class GmailService {
       return emails;
     }
 
-    return emails.filter(email => {
+    return emails.filter(_email => {
       // All Gmail API supported filters are already applied
       // This is for any additional client-side filtering if needed
       return true;
@@ -1658,9 +1657,9 @@ class GmailService {
   }> {
     this.validateUserId(userId);
 
-    let allAddedMessageIds = new Set<string>();
-    let allDeletedMessageIds = new Set<string>();
-    let allLabelChangedMessageIds = new Set<string>();
+    const allAddedMessageIds = new Set<string>();
+    const allDeletedMessageIds = new Set<string>();
+    const allLabelChangedMessageIds = new Set<string>();
     let currentHistoryId = startHistoryId;
     let hasMoreChanges = false;
     let nextPageToken: string | undefined;

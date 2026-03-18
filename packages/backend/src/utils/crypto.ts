@@ -100,7 +100,7 @@ export function decryptTokens(encryptedTokens: EncryptedTokens): TokenData {
     const combined = Buffer.from(encryptedTokens.encrypted, 'base64');
     
     // Extract components
-    const salt = combined.subarray(0, SALT_LENGTH);
+    const _salt = combined.subarray(0, SALT_LENGTH);
     const iv = combined.subarray(SALT_LENGTH, TAG_POSITION);
     const tag = combined.subarray(TAG_POSITION, ENCRYPTED_POSITION);
     const encrypted = combined.subarray(ENCRYPTED_POSITION);
@@ -115,7 +115,7 @@ export function decryptTokens(encryptedTokens: EncryptedTokens): TokenData {
     const tokenData = JSON.parse(decrypted) as TokenData & { timestamp: number };
     
     // Remove internal timestamp and return clean token data
-    const { timestamp, ...cleanTokenData } = tokenData;
+    const { timestamp: _timestamp, ...cleanTokenData } = tokenData;
     
     return cleanTokenData;
   } catch (error) {

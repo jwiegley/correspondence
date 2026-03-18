@@ -1,4 +1,3 @@
-import { gmail_v1 } from 'googleapis';
 import { logger } from '../utils/logger';
 import { redisService } from './redis';
 

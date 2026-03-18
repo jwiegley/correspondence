@@ -1,7 +1,7 @@
-import React, { useMemo, useCallback, useRef, useEffect, useState } from 'react';
-import { FixedSizeList as List, ListChildComponentProps } from 'react-window';
+import React, { useMemo, useCallback, useRef, useEffect } from 'react';
+import { List, ListImperativeAPI, RowComponentProps } from 'react-window';
 import InfiniteLoader from 'react-window-infinite-loader';
-import { EmailListItem } from './EmailListItem';
+import EmailListItem from './EmailListItem';
 import performanceMonitor from '../utils/performance';
 import './VirtualEmailList.css';
 
@@ -40,9 +40,7 @@ interface ItemData {
 }
 
 // Memoized email item component
-const EmailItem = React.memo<ListChildComponentProps<ItemData>>(({ index, style, data }) => {
-  const { emails, onEmailClick, onEmailSelect, isLoading, hasNextPage } = data;
-  
+const EmailItem = React.memo<RowComponentProps<ItemData>>(({ index, style, emails, isLoading }) => {
   // Show loading placeholder for items that haven't loaded yet
   if (index >= emails.length) {
     if (isLoading) {
@@ -60,13 +58,11 @@ const EmailItem = React.memo<ListChildComponentProps<ItemData>>(({ index, style,
   }
 
   const email = emails[index];
-  
+
   return (
     <div style={style} className="virtual-email-item">
       <EmailListItem
-        email={email}
-        onClick={() => onEmailClick(email)}
-        onSelect={(selected) => onEmailSelect(email, selected)}
+        email={email as any}
       />
     </div>
   );
@@ -87,14 +83,13 @@ export const VirtualEmailList: React.FC<VirtualEmailListProps> = ({
   threshold = 15,
   className = ''
 }) => {
-  const listRef = useRef<List>(null);
+  const listRef = useRef<ListImperativeAPI | null>(null);
   const infiniteLoaderRef = useRef<InfiniteLoader>(null);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [isScrolling, setIsScrolling] = useState(false);
-  
+  const scrollPosition = 0;
+
   // Performance monitoring
   const renderStartTime = useRef<number>(0);
-  
+
   useEffect(() => {
     renderStartTime.current = performance.now();
   });
@@ -146,26 +141,8 @@ export const VirtualEmailList: React.FC<VirtualEmailListProps> = ({
     hasNextPage
   }), [emails, onEmailClick, onEmailSelect, isLoading, hasNextPage]);
 
-  // Scroll event handler
-  const handleScroll = useCallback(({ scrollOffset, scrollDirection }: any) => {
-    setScrollPosition(scrollOffset);
-    
-    // Record scroll performance metrics
-    performanceMonitor.recordCustomMetric('scrollPosition', scrollOffset, {
-      direction: scrollDirection,
-      itemsVisible: Math.ceil(height / itemHeight),
-      totalItems: emails.length
-    });
-  }, [height, itemHeight, emails.length]);
-
-  // Scroll start/stop handlers for performance
-  const handleScrollStart = useCallback(() => {
-    setIsScrolling(true);
-  }, []);
-
-  const handleScrollStop = useCallback(() => {
-    setIsScrolling(false);
-  }, []);
+  // Scroll event handlers (available for future use)
+  // const handleScroll = useCallback(({ scrollOffset, scrollDirection }: { scrollOffset: number; scrollDirection: string }) => { ... });
 
   // Keyboard navigation
   const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
@@ -216,35 +193,16 @@ export const VirtualEmailList: React.FC<VirtualEmailListProps> = ({
     }
 
     if (newIndex !== currentIndex) {
-      listRef.current.scrollToItem(newIndex, 'smart');
+      listRef.current.scrollToRow({ index: newIndex, align: 'smart' });
     }
   }, [scrollPosition, itemHeight, height, emails, onEmailClick, onEmailSelect]);
 
-  // Scroll to top function
-  const scrollToTop = useCallback(() => {
-    listRef.current?.scrollToItem(0, 'start');
-  }, []);
-
-  // Scroll to email by ID
-  const scrollToEmail = useCallback((emailId: string) => {
-    const index = emails.findIndex(email => email.id === emailId);
-    if (index !== -1) {
-      listRef.current?.scrollToItem(index, 'center');
-    }
-  }, [emails]);
-
   // Dynamic item size calculation (if needed)
-  const getItemSize = useCallback((index: number) => {
+  const getItemSize = useCallback((_index: number) => {
     // You could implement dynamic sizing based on email content
     // For now, we'll use fixed size
     return itemHeight;
   }, [itemHeight]);
-
-  // Error boundary for virtual list
-  const handleError = useCallback((error: Error) => {
-    console.error('Virtual list error:', error);
-    performanceMonitor.recordCustomMetric('virtualListError', 1, { error: error.message });
-  }, []);
 
   // Render loading state
   if (emails.length === 0 && isLoading) {
@@ -265,8 +223,8 @@ export const VirtualEmailList: React.FC<VirtualEmailListProps> = ({
   }
 
   return (
-    <div 
-      className={`virtual-email-list ${isScrolling ? 'scrolling' : ''} ${className}`}
+    <div
+      className={`virtual-email-list ${className}`}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="list"
@@ -281,38 +239,35 @@ export const VirtualEmailList: React.FC<VirtualEmailListProps> = ({
       >
         {({ onItemsRendered, ref }) => (
           <List
-            ref={(list) => {
+            listRef={(list: ListImperativeAPI | null) => {
               ref(list);
-              (listRef as any).current = list;
+              listRef.current = list;
             }}
-            height={height}
-            itemCount={itemCount}
-            itemSize={getItemSize}
-            itemData={itemData}
-            onItemsRendered={onItemsRendered}
-            onScroll={handleScroll}
+            rowCount={itemCount}
+            rowHeight={getItemSize}
+            rowProps={itemData}
+            onRowsRendered={({ startIndex, stopIndex }: { startIndex: number; stopIndex: number }) => {
+              onItemsRendered({ overscanStartIndex: startIndex, overscanStopIndex: stopIndex, visibleStartIndex: startIndex, visibleStopIndex: stopIndex });
+            }}
             overscanCount={overscanCount}
-            direction="vertical"
-            layout="vertical"
-            useIsScrolling={true}
-          >
-            {EmailItem}
-          </List>
+            style={{ height }}
+            rowComponent={EmailItem}
+          />
         )}
       </InfiniteLoader>
-      
+
       {/* Scroll indicator */}
       {emails.length > Math.ceil(height / itemHeight) && (
         <div className="scroll-indicator">
-          <div 
-            className="scroll-progress" 
-            style={{ 
-              height: `${(scrollPosition / ((emails.length - 1) * itemHeight)) * 100}%` 
+          <div
+            className="scroll-progress"
+            style={{
+              height: `${(scrollPosition / ((emails.length - 1) * itemHeight)) * 100}%`
             }}
           />
         </div>
       )}
-      
+
       {/* Performance overlay in development */}
       {process.env.NODE_ENV === 'development' && (
         <div className="performance-overlay">
@@ -327,18 +282,18 @@ export const VirtualEmailList: React.FC<VirtualEmailListProps> = ({
 
 // Export utility functions
 export const virtualScrollUtils = {
-  scrollToTop: (listRef: React.RefObject<List>) => {
-    listRef.current?.scrollToItem(0, 'start');
+  scrollToTop: (ref: React.RefObject<ListImperativeAPI | null>) => {
+    ref.current?.scrollToRow({ index: 0, align: 'start' });
   },
-  
-  scrollToItem: (listRef: React.RefObject<List>, index: number, align: 'start' | 'center' | 'end' | 'smart' = 'smart') => {
-    listRef.current?.scrollToItem(index, align);
+
+  scrollToItem: (ref: React.RefObject<ListImperativeAPI | null>, index: number, align: 'start' | 'center' | 'end' | 'smart' = 'smart') => {
+    ref.current?.scrollToRow({ index, align });
   },
-  
-  scrollToEmail: (listRef: React.RefObject<List>, emails: Email[], emailId: string) => {
+
+  scrollToEmail: (ref: React.RefObject<ListImperativeAPI | null>, emails: Email[], emailId: string) => {
     const index = emails.findIndex(email => email.id === emailId);
     if (index !== -1) {
-      listRef.current?.scrollToItem(index, 'center');
+      ref.current?.scrollToRow({ index, align: 'center' });
     }
   }
 };

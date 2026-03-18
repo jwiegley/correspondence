@@ -231,7 +231,7 @@ describe('EmailActions', () => {
     expect(actionButton).toHaveAttribute('tabIndex', '0');
   });
 
-  it('handles keyboard events', () => {
+  it('handles keyboard events', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: () => Promise.resolve({ success: true }),
@@ -246,6 +246,8 @@ describe('EmailActions', () => {
     const readButton = screen.getByLabelText(/mark email as read/i);
     fireEvent.keyDown(readButton, { key: 'Enter' });
 
-    expect(mockFetch).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalled();
+    });
   });
 });

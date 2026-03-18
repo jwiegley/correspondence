@@ -1,4 +1,5 @@
-import { getCLS, getFID, getFCP, getLCP, getTTFB, Metric } from 'web-vitals';
+import React from 'react';
+import { onCLS, onFCP, onLCP, onTTFB, Metric } from 'web-vitals';
 
 // Performance metrics tracking
 interface PerformanceMetrics {
@@ -54,27 +55,22 @@ class PerformanceMonitor {
     }
 
     // Core Web Vitals
-    getCLS((metric) => {
+    onCLS((metric: Metric) => {
       this.metrics.cls = metric.value;
       this.reportMetric('CLS', metric);
     });
 
-    getFID((metric) => {
-      this.metrics.fid = metric.value;
-      this.reportMetric('FID', metric);
-    });
-
-    getFCP((metric) => {
+    onFCP((metric: Metric) => {
       this.metrics.fcp = metric.value;
       this.reportMetric('FCP', metric);
     });
 
-    getLCP((metric) => {
+    onLCP((metric: Metric) => {
       this.metrics.lcp = metric.value;
       this.reportMetric('LCP', metric);
     });
 
-    getTTFB((metric) => {
+    onTTFB((metric: Metric) => {
       this.metrics.ttfb = metric.value;
       this.reportMetric('TTFB', metric);
     });
@@ -338,7 +334,7 @@ export function withPerformanceMonitoring<T extends object>(
     React.useEffect(() => {
       const name = componentName || Component.displayName || Component.name || 'Unknown';
       const endTiming = performanceMonitor.startTiming(`component-${name}`);
-      
+
       return () => {
         endTiming();
       };

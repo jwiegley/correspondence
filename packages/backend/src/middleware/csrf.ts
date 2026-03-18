@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
-import * as csrf from 'csrf';
+import Tokens from 'csrf';
 import { logger } from '../utils/logger';
 
 // Initialize CSRF tokens generator
-const tokens = new csrf();
+const tokens = new Tokens();
 
 // Secret for CSRF token generation (should be stored securely)
-const CSRF_SECRET = process.env.CSRF_SECRET || 'csrf-secret-change-in-production';
+const _CSRF_SECRET = process.env.CSRF_SECRET || 'csrf-secret-change-in-production';
 
 interface CSRFRequest extends Request {
   csrfToken?: string;
@@ -68,10 +68,11 @@ export const csrfProtection = (req: CSRFRequest, res: Response, next: NextFuncti
       userId: req.user?.id
     });
 
-    return res.status(403).json({
+    res.status(403).json({
       error: 'CSRF token missing',
       type: 'CSRF_TOKEN_MISSING'
     });
+    return;
   }
 
   if (!verifyCSRFToken(req, token)) {
@@ -84,10 +85,11 @@ export const csrfProtection = (req: CSRFRequest, res: Response, next: NextFuncti
       providedToken: token.substring(0, 10) + '...' // Log partial token for debugging
     });
 
-    return res.status(403).json({
+    res.status(403).json({
       error: 'Invalid CSRF token',
       type: 'CSRF_TOKEN_INVALID'
     });
+    return;
   }
 
   next();
@@ -142,10 +144,11 @@ export const doubleSubmitCookieCSRF = (req: CSRFRequest, res: Response, next: Ne
       userId: req.user?.id
     });
 
-    return res.status(403).json({
+    res.status(403).json({
       error: 'CSRF protection failed - tokens missing',
       type: 'CSRF_DOUBLE_SUBMIT_FAILED'
     });
+    return;
   }
 
   if (headerToken !== cookieToken) {
@@ -156,10 +159,11 @@ export const doubleSubmitCookieCSRF = (req: CSRFRequest, res: Response, next: Ne
       userId: req.user?.id
     });
 
-    return res.status(403).json({
+    res.status(403).json({
       error: 'CSRF protection failed - token mismatch',
       type: 'CSRF_DOUBLE_SUBMIT_FAILED'
     });
+    return;
   }
 
   next();

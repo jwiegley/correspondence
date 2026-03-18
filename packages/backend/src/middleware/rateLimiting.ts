@@ -46,7 +46,7 @@ const createRedisStore = () => {
 
 // Lazy store getter to defer Redis connection
 let redisStoreCache: RedisStore | undefined;
-const getRedisStore = () => {
+const _getRedisStore = () => {
   if (!redisStoreCache) {
     redisStoreCache = createRedisStore();
   }

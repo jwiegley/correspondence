@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { redisService } from '../services/redis';
@@ -201,7 +202,6 @@ class ErrorMonitoringService {
   }
 
   private generateErrorFingerprint(error: MonitoredError, _req: Request): string {
-    const crypto = require('crypto');
     const fingerprint = [
       error.name,
       error.message,

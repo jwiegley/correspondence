@@ -246,7 +246,7 @@ router.patch('/emails/:emailId', requireAuth, ensureValidTokens, async (req, res
 // Test route for Gmail API integration
 router.get('/gmail/profile', requireAuth, ensureValidTokens, async (req, res) => {
   try {
-    const tokens = (req as any).tokens;
+    const _tokens = (req as any).tokens;
     
     // TODO: Use Gmail API to get user profile
     res.json({

@@ -17,7 +17,7 @@
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
-    "build:shared": "npm run build --workspace=shared",
+    "build:shared": "npm run build --workspace=@correspondence/shared",
     "build:backend": "npm run build --workspace=backend",
     "build:frontend": "npm run build --workspace=frontend",
     "test": "npm run test --workspaces",

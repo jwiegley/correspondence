@@ -168,7 +168,7 @@ function applyBrowserSpecificOptimizations(): void {
       // Safari may need explicit color preservation
       body.classList.add('print-safari-fix');
       document.querySelectorAll('*').forEach(el => {
-        (el as HTMLElement).style.webkitPrintColorAdjust = 'exact';
+        (el as HTMLElement).style.printColorAdjust = 'exact';
       });
       break;
       

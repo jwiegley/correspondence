@@ -2,12 +2,10 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
-import EmailList from './pages/EmailList';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AuthError from './pages/AuthError';
 import Emails from './pages/Emails';
-import Layout from './components/Layout';
 
 // Create a client
 const queryClient = new QueryClient({

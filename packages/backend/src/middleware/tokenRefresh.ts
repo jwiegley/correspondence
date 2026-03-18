@@ -205,7 +205,7 @@ class RequestQueue {
       const queue = this.queues.get(userId) || [];
       this.queues.delete(userId);
       
-      queue.forEach(({ req, res, next }) => {
+      queue.forEach(({ req: _req, res, next }) => {
         if (!res.headersSent) {
           next();
         }

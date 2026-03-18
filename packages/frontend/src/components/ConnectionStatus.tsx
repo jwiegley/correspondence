@@ -48,7 +48,8 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
     refetchOnWindowFocus: true,
   });
 
-  const lastSyncTime = useRelativeTime(status?.lastSync);
+  const lastSyncTime = useRelativeTime(status?.lastSync ?? null);
+  const tokenExpiryTime = useRelativeTime(status?.tokenExpiry ?? null);
 
   // Auto-refresh on component mount
   useEffect(() => {
@@ -176,7 +177,7 @@ export const ConnectionStatus: React.FC<ConnectionStatusProps> = ({
                 <div className="tooltip-row">
                   <span className="tooltip-label">Token Expires:</span>
                   <span className="tooltip-value">
-                    {useRelativeTime(status.tokenExpiry)}
+                    {tokenExpiryTime}
                   </span>
                 </div>
               )}

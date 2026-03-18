@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { createClient, RedisClientType } from 'redis';
 import { logger } from '../utils/logger';
 
@@ -431,7 +432,6 @@ class RedisService {
 
   // Utility method to hash query strings for consistent cache keys
   private hashQuery(query: string): string {
-    const crypto = require('crypto');
     return crypto.createHash('md5').update(query).digest('hex');
   }
 

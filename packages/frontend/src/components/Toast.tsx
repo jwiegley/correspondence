@@ -25,7 +25,7 @@ export const Toast: React.FC<ToastProps> = ({
   dismissible = true,
   onDismiss,
 }) => {
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
@@ -36,6 +36,7 @@ export const Toast: React.FC<ToastProps> = ({
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [duration]);
 
   const handleDismiss = () => {

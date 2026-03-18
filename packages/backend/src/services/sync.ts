@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 import { logger } from '../utils/logger';
-import { retryHandler, RetryConfigs, RetryResult } from '../utils/retry';
+import { retryHandler, RetryConfigs } from '../utils/retry';
 import { gmailService } from './gmail';
 import { redisService } from './redis';
 
@@ -72,7 +72,7 @@ export class SyncService extends EventEmitter {
     logger.info(`Initializing sync for user ${userId}`);
 
     // Merge config with defaults
-    const userConfig = { ...this.config, ...config };
+    const _userConfig = { ...this.config, ...config };
 
     // Initialize sync state
     const syncState: SyncState = {
@@ -404,7 +404,7 @@ export class SyncService extends EventEmitter {
       return;
     }
 
-    const startTime = Date.now();
+    const _startTime = Date.now();
     
     // Emit sync started event
     this.emit('sync:started', {

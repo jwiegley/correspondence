@@ -1,10 +1,10 @@
 import helmet from 'helmet';
+import crypto from 'crypto';
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 
 // Nonce generator for CSP
 const generateNonce = (): string => {
-  const crypto = require('crypto');
   return crypto.randomBytes(16).toString('base64');
 };
 

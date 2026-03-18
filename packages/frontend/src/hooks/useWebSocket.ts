@@ -76,7 +76,7 @@ export const useWebSocket = (options: UseWebSocketOptions = {}): UseWebSocketRet
   const socketRef = useRef<Socket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttemptsRef = useRef(0);
-  const eventCallbacksRef = useRef<Map<string, Set<Function>>>(new Map());
+  const eventCallbacksRef = useRef<Map<string, Set<(...args: any[]) => void>>>(new Map());
 
   const [state, setState] = useState<WebSocketState>({
     connected: false,

@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { logger } from './logger';
 import { redisService } from '../services/redis';
 
@@ -119,7 +119,7 @@ class SecurityTesting {
   /**
    * Test input validation against common attack vectors
    */
-  private async testInputValidation(req?: Request): Promise<void> {
+  private async testInputValidation(_req?: Request): Promise<void> {
     const testPayloads = [
       // XSS payloads
       '<script>alert("XSS")</script>',
@@ -200,7 +200,7 @@ class SecurityTesting {
   /**
    * Test session security
    */
-  private async testSessionSecurity(req?: Request): Promise<void> {
+  private async testSessionSecurity(_req?: Request): Promise<void> {
     const sessionTests = [
       await this.testSessionFixation(),
       await this.testSessionHijacking(),
@@ -269,8 +269,8 @@ class SecurityTesting {
   /**
    * Test security headers
    */
-  private async testSecurityHeaders(req?: Request): Promise<void> {
-    const requiredHeaders = [
+  private async testSecurityHeaders(_req?: Request): Promise<void> {
+    const _requiredHeaders = [
       'x-frame-options',
       'x-content-type-options',
       'x-xss-protection',
@@ -287,7 +287,7 @@ class SecurityTesting {
       timestamp: Date.now()
     };
 
-    const missingHeaders: string[] = [];
+    const _missingHeaders: string[] = [];
     
     // This would typically be tested with actual HTTP responses
     // For now, we'll assume headers are configured based on our middleware
@@ -298,7 +298,7 @@ class SecurityTesting {
   /**
    * Test for sensitive data exposure
    */
-  private async testDataExposure(req?: Request): Promise<void> {
+  private async testDataExposure(_req?: Request): Promise<void> {
     const exposureTest: SecurityTestResult = {
       testName: 'Data Exposure',
       passed: true,
@@ -308,7 +308,7 @@ class SecurityTesting {
     };
 
     // Test for common sensitive data patterns
-    const sensitivePatterns = [
+    const _sensitivePatterns = [
       /password/i,
       /secret/i,
       /token/i,
@@ -387,7 +387,7 @@ class SecurityTesting {
     };
   }
 
-  private async testAuthenticationBypass(req?: Request): Promise<SecurityTestResult> {
+  private async testAuthenticationBypass(_req?: Request): Promise<SecurityTestResult> {
     return {
       testName: 'Authentication Bypass',
       passed: true,
@@ -407,7 +407,7 @@ class SecurityTesting {
     };
   }
 
-  private async testHorizontalPrivilegeEscalation(userId: string): Promise<{ passed: boolean; evidence?: any }> {
+  private async testHorizontalPrivilegeEscalation(_userId: string): Promise<{ passed: boolean; evidence?: any }> {
     // Test if user can access other users' data
     return { passed: true };
   }

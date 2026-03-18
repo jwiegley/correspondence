@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useCallback, useEffect, useState } from 'react';
-import { useWebSocket, WebSocketState, SyncEvent, MessageChanges, SyncStatus, UseWebSocketReturn } from '../hooks/useWebSocket';
+import { useWebSocket, SyncEvent, MessageChanges, SyncStatus, UseWebSocketReturn } from '../hooks/useWebSocket';
 import { useAuth } from '../hooks/useAuth';
 
 export interface WebSocketContextType extends UseWebSocketReturn {
@@ -148,7 +148,7 @@ export const useWebSocketContext = (): WebSocketContextType => {
 
 // Additional hook for sync-specific functionality
 export const useSyncUpdates = () => {
-  const { onSyncEvent, onSyncStatus, onMessageChanges, isConnected } = useWebSocketContext();
+  const { onSyncEvent, onSyncStatus, isConnected } = useWebSocketContext();
   const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'error'>('idle');
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);

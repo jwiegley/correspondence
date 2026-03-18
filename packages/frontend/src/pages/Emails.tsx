@@ -1,4 +1,3 @@
-import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, Mail, Bell, Flag, X } from 'lucide-react';
 import { useToast } from '../contexts/ToastContext';
@@ -153,14 +152,14 @@ function Emails() {
       
       return { previousEmails };
     },
-    onError: (err, variables, context) => {
+    onError: (_err, _variables, context) => {
       // If the mutation fails, use the context returned from onMutate to roll back
       if (context?.previousEmails) {
         queryClient.setQueryData(['emails'], context.previousEmails);
       }
       showError('Failed to update label');
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (_data, variables) => {
       // Force immediate refetch to get the real data from server
       queryClient.invalidateQueries({ queryKey: ['emails'] });
       
@@ -218,21 +217,6 @@ function Emails() {
     return normalized;
   });
 
-  // Helper to check if email has specific label (checks both name and known IDs)
-  const hasLabel = (email: Email, labelName: string): boolean => {
-    // Direct label name match
-    if (email.labels.includes(labelName)) return true;
-    
-    // Check if any of the email's labels match known IDs for this label name
-    for (const [id, name] of Object.entries(labelIdMap)) {
-      if (name === labelName && email.labels.includes(id)) {
-        return true;
-      }
-    }
-    
-    return false;
-  };
-  
   // Debug: Log first few emails to see their labels
   if (emails.length > 0) {
     console.log('Raw first email labels:', emails[0].labels);

@@ -105,7 +105,7 @@ export function validatePrintLayout(): void {
       const firstItem = emailItems[0] as HTMLElement;
       const style = getComputedStyle(firstItem);
       console.log(`📧 Email items found: ${emailItems.length}`);
-      console.log(`🎨 First item background preserved: ${style.webkitPrintColorAdjust === 'exact' || style.printColorAdjust === 'exact' ? '✅ Yes' : '⚠️  May not preserve'}`);
+      console.log(`🎨 First item background preserved: ${style.printColorAdjust === 'exact' || style.printColorAdjust === 'exact' ? '✅ Yes' : '⚠️  May not preserve'}`);
     } else {
       console.log('ℹ️  No email items found for testing');
     }

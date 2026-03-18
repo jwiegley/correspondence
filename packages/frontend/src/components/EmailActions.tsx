@@ -83,11 +83,11 @@ const EmailActions: React.FC<EmailActionsProps> = ({
   hasActionItemLabel,
 }) => {
   const queryClient = useQueryClient();
-  const { success, error } = useToast();
+  const { showSuccess, showError } = useToast();
 
   // Read status mutation
-  const toggleReadMutation = useMutation(
-    async (markAsRead: boolean) => {
+  const toggleReadMutation = useMutation({
+    mutationFn: async (markAsRead: boolean) => {
       const response = await fetch(`/api/emails/${emailId}/read`, {
         method: 'PATCH',
         headers: {
@@ -103,44 +103,42 @@ const EmailActions: React.FC<EmailActionsProps> = ({
 
       return response.json();
     },
-    {
-      onMutate: async (markAsRead) => {
-        // Cancel any outgoing refetches
-        await queryClient.cancelQueries(['emails']);
-        
-        // Snapshot the previous value
-        const previousEmails = queryClient.getQueryData(['emails']);
-        
-        // Optimistically update the cache
-        queryClient.setQueryData(['emails'], (old: any) =>
-          updateEmailInList(old, emailId, { isUnread: !markAsRead })
-        );
+    onMutate: async (markAsRead: boolean) => {
+      // Cancel any outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['emails'] });
 
-        // Return a context object with snapshotted value
-        return { previousEmails };
-      },
-      onSuccess: (data, markAsRead) => {
-        success(`Email ${markAsRead ? 'marked as read' : 'marked as unread'}`);
-      },
-      onError: (err, variables, context) => {
-        // Rollback optimistic update on error
-        if (context?.previousEmails) {
-          queryClient.setQueryData(['emails'], context.previousEmails);
-        }
-        error(`Failed to ${variables ? 'mark as read' : 'mark as unread'}. Please try again.`);
-      },
-      onSettled: () => {
-        // Refetch to ensure consistency
-        queryClient.invalidateQueries(['emails']);
-      },
-    }
-  );
+      // Snapshot the previous value
+      const previousEmails = queryClient.getQueryData(['emails']);
+
+      // Optimistically update the cache
+      queryClient.setQueryData(['emails'], (old: any) =>
+        updateEmailInList(old, emailId, { isUnread: !markAsRead })
+      );
+
+      // Return a context object with snapshotted value
+      return { previousEmails };
+    },
+    onSuccess: (_data: any, markAsRead: boolean) => {
+      showSuccess(`Email ${markAsRead ? 'marked as read' : 'marked as unread'}`);
+    },
+    onError: (_err: any, variables: boolean, context: any) => {
+      // Rollback optimistic update on error
+      if (context?.previousEmails) {
+        queryClient.setQueryData(['emails'], context.previousEmails);
+      }
+      showError(`Failed to ${variables ? 'mark as read' : 'mark as unread'}. Please try again.`);
+    },
+    onSettled: () => {
+      // Refetch to ensure consistency
+      queryClient.invalidateQueries({ queryKey: ['emails'] });
+    },
+  });
 
   // Notify label mutation
-  const toggleNotifyLabelMutation = useMutation(
-    async ({ add }: { add: boolean }) => {
+  const toggleNotifyLabelMutation = useMutation({
+    mutationFn: async ({ add }: { add: boolean }) => {
       const method = add ? 'POST' : 'DELETE';
-      const url = add 
+      const url = add
         ? `/api/emails/${emailId}/labels`
         : `/api/emails/${emailId}/labels/Notify`;
 
@@ -159,51 +157,49 @@ const EmailActions: React.FC<EmailActionsProps> = ({
 
       return response.json();
     },
-    {
-      onMutate: async ({ add }) => {
-        await queryClient.cancelQueries(['emails']);
-        const previousEmails = queryClient.getQueryData(['emails']);
-        
-        queryClient.setQueryData(['emails'], (old: any) => {
-          if (!old?.emails) return old;
-          
-          return {
-            ...old,
-            emails: old.emails.map((email: Email) =>
-              email.id === emailId
-                ? {
+    onMutate: async ({ add }: { add: boolean }) => {
+      await queryClient.cancelQueries({ queryKey: ['emails'] });
+      const previousEmails = queryClient.getQueryData(['emails']);
+
+      queryClient.setQueryData(['emails'], (old: any) => {
+        if (!old?.emails) return old;
+
+        return {
+          ...old,
+          emails: old.emails.map((email: Email) =>
+            email.id === emailId
+              ? {
                     ...email,
                     labels: add
                       ? [...email.labels, 'Notify']
-                      : email.labels.filter(label => label !== 'Notify'),
+                      : email.labels.filter((label: string) => label !== 'Notify'),
                   }
-                : email
-            ),
-          };
-        });
+              : email
+          ),
+        };
+      });
 
-        return { previousEmails };
-      },
-      onSuccess: (data, { add }) => {
-        success(`${add ? 'Added' : 'Removed'} Notify label`);
-      },
-      onError: (err, variables, context) => {
-        if (context?.previousEmails) {
-          queryClient.setQueryData(['emails'], context.previousEmails);
-        }
-        error(`Failed to ${variables.add ? 'add' : 'remove'} Notify label. Please try again.`);
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries(['emails']);
-      },
-    }
-  );
+      return { previousEmails };
+    },
+    onSuccess: (_data: any, { add }: { add: boolean }) => {
+      showSuccess(`${add ? 'Added' : 'Removed'} Notify label`);
+    },
+    onError: (_err: any, variables: { add: boolean }, context: any) => {
+      if (context?.previousEmails) {
+        queryClient.setQueryData(['emails'], context.previousEmails);
+      }
+      showError(`Failed to ${variables.add ? 'add' : 'remove'} Notify label. Please try again.`);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['emails'] });
+    },
+  });
 
   // Action Item label mutation
-  const toggleActionItemLabelMutation = useMutation(
-    async ({ add }: { add: boolean }) => {
+  const toggleActionItemLabelMutation = useMutation({
+    mutationFn: async ({ add }: { add: boolean }) => {
       const method = add ? 'POST' : 'DELETE';
-      const url = add 
+      const url = add
         ? `/api/emails/${emailId}/labels`
         : `/api/emails/${emailId}/labels/Action-Item`;
 
@@ -222,92 +218,90 @@ const EmailActions: React.FC<EmailActionsProps> = ({
 
       return response.json();
     },
-    {
-      onMutate: async ({ add }) => {
-        await queryClient.cancelQueries(['emails']);
-        const previousEmails = queryClient.getQueryData(['emails']);
-        
-        queryClient.setQueryData(['emails'], (old: any) => {
-          if (!old?.emails) return old;
-          
-          return {
-            ...old,
-            emails: old.emails.map((email: Email) =>
-              email.id === emailId
-                ? {
+    onMutate: async ({ add }: { add: boolean }) => {
+      await queryClient.cancelQueries({ queryKey: ['emails'] });
+      const previousEmails = queryClient.getQueryData(['emails']);
+
+      queryClient.setQueryData(['emails'], (old: any) => {
+        if (!old?.emails) return old;
+
+        return {
+          ...old,
+          emails: old.emails.map((email: Email) =>
+            email.id === emailId
+              ? {
                     ...email,
                     labels: add
                       ? [...email.labels, 'Action-Item']
-                      : email.labels.filter(label => label !== 'Action-Item'),
+                      : email.labels.filter((label: string) => label !== 'Action-Item'),
                   }
-                : email
-            ),
-          };
-        });
+              : email
+          ),
+        };
+      });
 
-        return { previousEmails };
-      },
-      onSuccess: (data, { add }) => {
-        success(`${add ? 'Added' : 'Removed'} Action Item label`);
-      },
-      onError: (err, variables, context) => {
-        if (context?.previousEmails) {
-          queryClient.setQueryData(['emails'], context.previousEmails);
-        }
-        error(`Failed to ${variables.add ? 'add' : 'remove'} Action Item label. Please try again.`);
-      },
-      onSettled: () => {
-        queryClient.invalidateQueries(['emails']);
-      },
-    }
-  );
+      return { previousEmails };
+    },
+    onSuccess: (_data: any, { add }: { add: boolean }) => {
+      showSuccess(`${add ? 'Added' : 'Removed'} Action Item label`);
+    },
+    onError: (_err: any, variables: { add: boolean }, context: any) => {
+      if (context?.previousEmails) {
+        queryClient.setQueryData(['emails'], context.previousEmails);
+      }
+      showError(`Failed to ${variables.add ? 'add' : 'remove'} Action Item label. Please try again.`);
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['emails'] });
+    },
+  });
 
   // Check if any mutation is loading
-  const isAnyLoading = 
-    toggleReadMutation.isLoading ||
-    toggleNotifyLabelMutation.isLoading ||
-    toggleActionItemLabelMutation.isLoading;
+  const isAnyLoading =
+    toggleReadMutation.isPending ||
+    toggleNotifyLabelMutation.isPending ||
+    toggleActionItemLabelMutation.isPending;
 
   return (
-    <div 
+    <div
       className="email-actions"
       role="group"
       aria-label="Email actions"
     >
       <EmailActionButton
-        onClick={() => toggleReadMutation.mutate(!isUnread)}
+        onClick={() => toggleReadMutation.mutate(isUnread)}
         disabled={isAnyLoading}
-        isLoading={toggleReadMutation.isLoading}
+        isLoading={toggleReadMutation.isPending}
         title={isUnread ? 'Mark as Read' : 'Mark as Unread'}
         aria-label={isUnread ? 'Mark email as read' : 'Mark email as unread'}
         aria-pressed={!isUnread}
         className={isUnread ? '' : 'read'}
       >
-        {isUnread ? '📖' : '📕'}
+        {isUnread ? '\u{1F4D6}' : '\u{1F4D5}'}
       </EmailActionButton>
 
       <EmailActionButton
         onClick={() => toggleNotifyLabelMutation.mutate({ add: !hasNotifyLabel })}
         disabled={isAnyLoading}
-        isLoading={toggleNotifyLabelMutation.isLoading}
+        isLoading={toggleNotifyLabelMutation.isPending}
         title={hasNotifyLabel ? 'Remove Notify Label' : 'Add Notify Label'}
         aria-label={hasNotifyLabel ? 'Remove notify label' : 'Add notify label'}
         aria-pressed={hasNotifyLabel}
         className={hasNotifyLabel ? 'active' : ''}
       >
-        🔔
+        {'\u{1F514}'}
       </EmailActionButton>
 
       <EmailActionButton
         onClick={() => toggleActionItemLabelMutation.mutate({ add: !hasActionItemLabel })}
         disabled={isAnyLoading}
-        isLoading={toggleActionItemLabelMutation.isLoading}
+        isLoading={toggleActionItemLabelMutation.isPending}
         title={hasActionItemLabel ? 'Remove Action Item Label' : 'Add Action Item Label'}
         aria-label={hasActionItemLabel ? 'Remove action item label' : 'Add action item label'}
         aria-pressed={hasActionItemLabel}
         className={hasActionItemLabel ? 'active' : ''}
       >
-        📌
+        {'\u{1F4CC}'}
       </EmailActionButton>
     </div>
   );

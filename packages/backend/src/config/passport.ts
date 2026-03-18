@@ -2,7 +2,7 @@
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { logger } from '../utils/logger';
-import { encryptTokens, decryptTokens } from '../utils/crypto';
+import { encryptTokens } from '../utils/crypto';
 import { redisService } from '../services/redis';
 
 interface AuthenticatedUser {

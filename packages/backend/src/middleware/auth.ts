@@ -17,7 +17,7 @@ declare global {
   }
 }
 
-interface AuthMiddlewareOptions {
+interface _AuthMiddlewareOptions {
   requireScopes?: string[];
   allowExpiredTokens?: boolean;
 }

@@ -22,7 +22,7 @@ export const useOAuthFlow = () => {
       const response = await axios.post('/auth/disconnect');
       return response.data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       showSuccess(
         'Disconnected successfully',
         'Your Gmail account has been disconnected. Email data has been cleared.'

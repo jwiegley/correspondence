@@ -54,7 +54,7 @@ router.get('/google', (req: Request, res: Response, next: NextFunction) => {
 /**
  * Handle Google OAuth callback
  */
-router.get('/google/callback', (req: Request, res: Response, next: NextFunction) => {
+router.get('/google/callback', (req: Request, res: Response, _next: NextFunction) => {
   // Check for OAuth errors in query parameters
   const error = req.query.error as string;
   const errorDescription = req.query.error_description as string;

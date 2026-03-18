@@ -7,7 +7,7 @@ export interface SyncStatusProps {
 
 export const SyncStatus: React.FC<SyncStatusProps> = ({ className }) => {
   const { state: wsState, isOnline } = useWebSocketContext();
-  const { syncState, lastSync, syncError, isSyncing } = useSyncUpdates();
+  const { lastSync, syncError, isSyncing } = useSyncUpdates();
 
   const getStatusColor = () => {
     if (!wsState.connected || !isOnline) return 'text-red-500';
